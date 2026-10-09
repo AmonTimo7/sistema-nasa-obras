@@ -35,6 +35,12 @@ obra `[DEMO]` (dados fictícios). Salvar, filtrar e pagar mostram um aviso: lá 
 há servidor. Para regerar a pasta `docs/`: `.\publicar_demo.ps1` (usa um banco
 descartável; o banco de trabalho não é tocado).
 
+A demonstração pede usuário e senha (combinados com quem vai olhar; não ficam
+no repositório). Esse login é feito no navegador — o Pages não tem servidor —,
+então só barra quem chega pelo link: não é segurança de verdade, e por isso a
+demonstração só tem dados fictícios. Regerar com login:
+`.\publicar_demo.ps1 -Usuario <usuario> -Senha <senha>`.
+
 ## Produção (Docker + PostgreSQL)
 
 Copie `.env.example` para `.env`, preencha, e `docker compose up -d --build`.

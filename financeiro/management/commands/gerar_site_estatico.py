@@ -10,6 +10,7 @@ Rode num banco DESCARTÁVEL só com dados fictícios (ver publicar_demo.ps1):
     SQLITE_PATH=/tmp/demo.sqlite3 python manage.py dados_exemplo
     SQLITE_PATH=/tmp/demo.sqlite3 python manage.py gerar_site_estatico --saida docs --base /repo/
 """
+import hashlib
 import html
 import re
 import shutil
@@ -57,6 +58,8 @@ class Command(BaseCommand):
         parser.add_argument("--base", default="/", help="Caminho do site publicado, ex.: /sistema-nasa-obras/")
         parser.add_argument("--repositorio", default="")
         parser.add_argument("--limite", type=int, default=1500)
+        parser.add_argument("--usuario", default="", help="Login da demonstração (com --senha).")
+        parser.add_argument("--senha", default="")
 
     def handle(self, *args, **o):
         if not Fornecedor.objects.filter(nome__startswith="[DEMO]").exists():
@@ -124,9 +127,18 @@ class Command(BaseCommand):
             '<div class="demo-faixa" role="note"><span class="pilula pilula-azul"><i></i>Demonstração</span>'
             "<span>Dados fictícios · só leitura</span>"
             + (f'<a href="{repo}" target="_blank" rel="noopener">código no GitHub</a>' if repo else "")
-            + f'</div><script src="{base}static/js/demo.js"></script>'
+            + f'</div><script>window.DEMO_BASE="{base}";</script><script src="{base}static/js/demo.js"></script>'
         )
+        porta = ""
+        if o["usuario"] and o["senha"]:
+            # Login feito no navegador (o Pages não tem servidor): barra quem chega
+            # pelo link, mas não é segurança de verdade. No código vai só o hash.
+            porta = (f'<script>try{{if(localStorage.getItem("nasa-demo")!=="ok")location.replace("{base}")}}'
+                     f'catch(e){{location.replace("{base}")}}</script>')
+            digest = hashlib.sha256(f'{o["usuario"].strip().lower()}:{o["senha"]}'.encode()).hexdigest()
         for url, texto in paginas.items():
+            if porta:
+                texto = texto.replace("<head>", "<head>" + porta, 1)
             texto = re.sub(r'<script src="/static/vendor/htmx\.min\.js[^"]*"[^>]*></script>', "", texto)
             texto = re.sub(r"\s(hx-[a-z-]+)='[^']*'", "", texto)
             texto = re.sub(r'<input type="hidden" name="csrfmiddlewaretoken"[^>]*>', "", texto)
@@ -145,10 +157,24 @@ class Command(BaseCommand):
         (estatico / "js" / "demo.js").write_text(DEMO_JS, encoding="utf-8")
         with open(estatico / "css" / "sistema.css", "a", encoding="utf-8") as css:
             css.write(DEMO_CSS)
-        (saida / "index.html").write_text(
-            f'<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url={base}financeiro/">'
-            f'<title>Nasa Obras — demonstração</title><a href="{base}financeiro/">Abrir a demonstração</a>',
-            encoding="utf-8")
+        if porta:
+            anonimo = Client(HTTP_HOST="127.0.0.1").get("/entrar/").content.decode("utf-8")
+            anonimo = re.sub(r'<script src="/static/vendor/htmx[^"]*"[^>]*></script>', "", anonimo)
+            anonimo = re.sub(r'<input type="hidden" name="csrfmiddlewaretoken"[^>]*>', "", anonimo)
+            anonimo = re.sub(r"\s(hx-[a-z-]+)='[^']*'", "", anonimo)
+            anonimo = ATRIBUTO.sub(trocar, anonimo)
+            anonimo = anonimo.replace('<form method="post">', '<form method="post" id="entrar-demo">')
+            anonimo = anonimo.replace(
+                "</body>",
+                f'<script>window.DEMO={{base:"{base}",chave:"{digest}"}};</script>'
+                f'<script src="{base}static/js/entrar.js"></script></body>')
+            (saida / "index.html").write_text(anonimo, encoding="utf-8")
+            (estatico / "js" / "entrar.js").write_text(ENTRAR_JS, encoding="utf-8")
+        else:
+            (saida / "index.html").write_text(
+                f'<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url={base}financeiro/">'
+                f'<title>Nasa Obras — demonstração</title><a href="{base}financeiro/">Abrir a demonstração</a>',
+                encoding="utf-8")
         (saida / "404.html").write_text(
             f'<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="2; url={base}financeiro/">'
             f'<title>Não encontrado</title><p style="font-family:sans-serif">Esta tela não existe na demonstração. '
@@ -168,7 +194,14 @@ DEMO_JS = """/* Demonstração estática: o que precisa de servidor mostra um av
     caixa.appendChild(m);
     setTimeout(function () { m.remove(); }, 6000);
   }
-  document.addEventListener("submit", function (e) { e.preventDefault(); aviso(); var d = e.target.closest("dialog"); if (d) d.close(); }, true);
+  document.addEventListener("submit", function (e) {
+    if (e.target.closest(".rodape")) {  // botão Sair
+      e.preventDefault();
+      try { localStorage.removeItem("nasa-demo"); } catch (x) {}
+      window.location = window.DEMO_BASE || "./";
+      return;
+    }
+    e.preventDefault(); aviso(); var d = e.target.closest("dialog"); if (d) d.close(); }, true);
   document.addEventListener("click", function (e) {
     var a = e.target.closest('a[href="#demo"]');
     if (a) { e.preventDefault(); aviso(); }
@@ -178,6 +211,36 @@ DEMO_JS = """/* Demonstração estática: o que precisa de servidor mostra um av
       if (e.target.closest(".seletor-obra")) return;
       if (e.target.closest("form[method=post], .filtros, .checklist-item")) aviso();
     }
+  });
+})();
+"""
+
+ENTRAR_JS = """/* Login da demonstração estática: confere o hash de usuario:senha no navegador. */
+(function () {
+  var form = document.getElementById("entrar-demo");
+  if (!form) return;
+  try { if (localStorage.getItem("nasa-demo") === "ok") { location.replace(DEMO.base + "financeiro/"); return; } } catch (e) {}
+  function erro(texto) {
+    var p = form.parentNode.querySelector(".erro-demo");
+    if (!p) { p = document.createElement("p"); p.className = "negativo rotulo erro-demo"; p.style.margin = "14px 0 0"; form.parentNode.insertBefore(p, form); }
+    p.textContent = texto;
+  }
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var u = (form.username.value || "").trim().toLowerCase();
+    var s = form.password.value || "";
+    if (!window.crypto || !crypto.subtle) { erro("Abra pelo endereço https para entrar."); return; }
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(u + ":" + s)).then(function (buf) {
+      var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+      if (hex === DEMO.chave) {
+        try { localStorage.setItem("nasa-demo", "ok"); } catch (x) {}
+        location.replace(DEMO.base + "financeiro/");
+      } else {
+        erro("Usuário ou senha não conferem.");
+        form.password.value = "";
+        form.password.focus();
+      }
+    });
   });
 })();
 """
