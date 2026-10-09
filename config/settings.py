@@ -81,7 +81,9 @@ def _banco():
     """DATABASE_URL=postgres://usuario:senha@host:5432/nome; sem ela, SQLite local."""
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
-        return {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}
+        # SQLITE_PATH: outro arquivo (ex.: banco descartável da demonstração)
+        return {"ENGINE": "django.db.backends.sqlite3",
+                "NAME": os.environ.get("SQLITE_PATH") or BASE_DIR / "db.sqlite3"}
     p = urlparse(url)
     if p.scheme not in ("postgres", "postgresql"):
         raise RuntimeError("DATABASE_URL precisa ser postgres://")
