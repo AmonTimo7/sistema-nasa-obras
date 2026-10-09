@@ -1,0 +1,16 @@
+services:
+  banco:
+    image: postgres:16
+    env_file: .env
+    volumes: [banco:/var/lib/postgresql/data]
+    restart: unless-stopped
+  app:
+    build: .
+    env_file: .env
+    depends_on: [banco]
+    ports: ["8000:8000"]
+    volumes: [arquivos:/app/media]
+    restart: unless-stopped
+volumes:
+  banco:
+  arquivos:
