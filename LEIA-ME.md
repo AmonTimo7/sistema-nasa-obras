@@ -28,6 +28,13 @@ Demonstração com dados **fictícios** (nada da planilha real):
 
 Testes: `.venv\Scripts\python manage.py test`
 
+## Demonstração no GitHub Pages
+
+https://amontimo7.github.io/sistema-nasa-obras/ — cópia estática das telas com a
+obra `[DEMO]` (dados fictícios). Salvar, filtrar e pagar mostram um aviso: lá não
+há servidor. Para regerar a pasta `docs/`: `.\publicar_demo.ps1` (usa um banco
+descartável; o banco de trabalho não é tocado).
+
 ## Produção (Docker + PostgreSQL)
 
 Copie `.env.example` para `.env`, preencha, e `docker compose up -d --build`.
