@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}{{ f.nome }}{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><a class="volta" href="{% url 'compras:fornecedores' %}">{% icone "voltar" %}Fornecedores</a>
+    <h1>{{ f.nome }}</h1><div class="sub">{{ f.get_tipo_display }}{% if f.ramo %} · {{ f.ramo }}{% endif %}{% if f.cidade %} · {{ f.cidade }}{% endif %}</div></div>
+  <div class="acoes">
+    {% if f.telefone %}<a class="botao" href="https://wa.me/55{{ f.telefone|cut:' '|cut:'('|cut:')'|cut:'-' }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+    <a class="botao" href="{% url 'compras:fornecedor_editar' f.pk %}">{% icone "lapis" %}Editar</a>
+    <a class="botao primario" href="{% url 'financeiro:lancamento_novo' 3 %}">{% icone "mais" %}Nova compra</a>
+  </div>
+</div>
+<div class="grade g-12">
+  <div class="cartao">
+    <h2>Cadastro</h2>
+    <ul class="lista-simples">
+      <li><span class="mudo">CNPJ / CPF</span><span>{{ f.cnpj|default:"—" }}</span></li>
+      <li><span class="mudo">Telefone</span><span>{{ f.telefone|default:"—" }}</span></li>
+      <li><span class="mudo">Contato</span><span>{{ f.contato|default:"—" }}</span></li>
+      <li><span class="mudo">Chave PIX</span><span>{{ f.chave_pix|default:"—" }}</span></li>
+      {% if f.observacoes %}<li><span class="mudo">Observações</span><span>{{ f.observacoes }}</span></li>{% endif %}
+    </ul>
+    {% if contas %}
+      <h3 class="mt">Contas em aberto</h3>
+      <ul class="lista-simples">{% for c in contas %}<li><span>{{ c.vencimento|date:"d/m/Y" }} · {{ c.descricao|truncatechars:30 }}</span><strong class="num">{{ c.valor|brl }}</strong></li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Histórico</h2><span class="rotulo">{{ qtd }} compra{{ qtd|pluralize }} · <strong>{{ total|brl }}</strong></span></div>
+    {% if compras %}
+    <div class="tabela-caixa"><table>
+      <thead><tr><th>Data</th><th>Obra</th><th>O quê</th><th class="valor">Qtd</th><th class="valor">Valor</th></tr></thead>
+      <tbody>{% for l in compras %}
+        <tr class="clicavel" data-href="{% url 'financeiro:lancamento' l.pk %}"><td class="num">{{ l.data|date:"d/m/y" }}</td><td class="rotulo">{{ l.obra }}</td>
+          <td class="desc">{{ l.subcategoria|default:l.categoria }}{% if l.descricao %}<small>{{ l.descricao|truncatechars:60 }}</small>{% endif %}</td>
+          <td class="valor">{% if l.quantidade %}{{ l.quantidade|floatformat:"-2" }} {{ l.unidade }}{% else %}—{% endif %}</td>
+          <td class="valor">{{ l.valor|brl }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="vazio">{% icone "caixa" %}Sem compras registradas.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

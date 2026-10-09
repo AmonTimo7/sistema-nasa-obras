@@ -1,0 +1,9 @@
+{% for e in form.non_field_errors %}<div class="faixa"><span class="pilula pilula-critico"><i></i>Não salvou</span><span>{{ e }}</span></div>{% endfor %}
+<div class="form">
+  {% for campo in form %}
+    {% if campo.is_hidden %}{{ campo }}{% else %}
+      {% include "financeiro/_campo.html" with largos="descricao observacoes observacao escopo nome endereco" %}
+    {% endif %}
+  {% endfor %}
+</div>
+{% if fornecedores %}<datalist id="lista-fornecedores">{% for f in fornecedores %}<option value="{{ f.nome }}">{% endfor %}</datalist>{% endif %}

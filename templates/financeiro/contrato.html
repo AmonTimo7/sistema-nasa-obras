@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Contrato e medições{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Contrato e medições</h1><div class="sub">{{ obra.nome }}{% if obra.numero_contrato %} · contrato {{ obra.numero_contrato }}{% endif %}{% if obra.cliente %} · {{ obra.cliente }}{% endif %}</div></div>
+  <div class="acoes">
+    <a class="botao" href="{% url 'financeiro:obra_editar' obra.pk %}">{% icone "lapis" %}Dados da obra</a>
+    <a class="botao" href="{% url 'financeiro:aditivo_novo' %}">{% icone "mais" %}Aditivo</a>
+    <a class="botao primario" href="{% url 'financeiro:medicao_nova' %}">{% icone "documento" %}Nova medição</a>
+  </div>
+</div>
+<div class="grade g-4">
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-azul">{% icone "documento" %}</span><span class="rotulo">Contrato + aditivos</span></div><div class="numero">{{ r.contrato|brl_curto }}</div><div class="contexto">{{ r.contrato|brl }}</div></div>
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-verde">{% icone "porcentagem" %}</span><span class="rotulo">Faturado</span></div><div class="numero">{{ r.faturado|brl_curto }}</div><div class="contexto">{{ r.faturado_pct|pct }} do contrato</div></div>
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-ciano">{% icone "check" %}</span><span class="rotulo">Recebido (líquido)</span></div><div class="numero">{{ r.recebido|brl_curto }}</div><div class="contexto">a receber: {{ r.a_receber|brl_curto }}</div></div>
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-laranja">{% icone "relogio" %}</span><span class="rotulo">Falta faturar</span></div><div class="numero">{{ r.a_faturar|brl_curto }}</div><div class="contexto">{{ faltando_pct|pct }} do contrato</div></div>
+</div>
+<div class="cartao mt">
+  <div class="pista">
+    <div class="pista-linha"><span>Faturado</span><div class="trilho serie-2"><span style="width:{{ r.faturado_pct|largura }}%"></span></div><span class="valor">{{ r.faturado_pct|pct }}</span></div>
+    <div class="pista-linha"><span>Prazo decorrido</span><div class="trilho neutro"><span style="width:{{ r.prazo_pct|largura }}%"></span></div><span class="valor">{{ r.prazo_pct|pct }}</span></div>
+  </div>
+</div>
+<div class="grade g-21 mt">
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Medições e NF de entrada</h2><span class="rotulo">soma: {{ soma_pct|floatformat:"-2" }}% do contrato</span></div>
+    {% if medicoes %}
+    <div class="tabela-caixa"><table>
+      <thead><tr><th>Medição</th><th class="valor">%</th><th>NF</th><th>Emissão</th><th>Vencimento</th><th class="valor">Bruto</th><th class="valor">Líquido</th><th>Situação</th></tr></thead>
+      <tbody>{% for m in medicoes %}
+        <tr class="clicavel" data-href="{% url 'financeiro:medicao_editar' m.pk %}">
+          <td><strong>{{ m.descricao }}</strong>{% if m.imposto %}<br><span class="rotulo">imposto {{ m.imposto.valor|brl }}</span>{% endif %}</td>
+          <td class="valor">{{ m.percentual|floatformat:"-2"|default:"—" }}</td>
+          <td>{{ m.numero_nf|default:"—" }}</td>
+          <td class="num">{{ m.data_emissao|date:"d/m/y"|default:"—" }}</td>
+          <td class="num">{{ m.vencimento|date:"d/m/y"|default:"—" }}</td>
+          <td class="valor">{{ m.valor|brl }}</td>
+          <td class="valor">{{ m.valor_liquido|brl }}{% if m.valor_retencao %}<br><span class="rotulo">retido {{ m.valor_retencao|brl }}</span>{% endif %}</td>
+          <td>{% if m.sit == "paga" %}<span class="pilula pilula-ok"><i></i>Paga {{ m.data_pagamento|date:"d/m" }}</span>{% elif m.sit == "atrasada" %}<span class="pilula pilula-critico"><i></i>Atrasada</span>{% elif m.sit == "aguardando" %}<span class="pilula pilula-atencao"><i></i>Aguardando</span>{% else %}<span class="pilula"><i></i>Prevista</span>{% endif %}</td>
+        </tr>{% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<div class="vazio">{% icone "documento" %}Nenhuma medição. A primeira costuma ser a entrada (ex.: 10%).</div>{% endif %}
+  </div>
+  <div class="cartao">
+    <h2>A obra</h2>
+    <ul class="lista-simples">
+      <li><span class="mudo">Valor do contrato</span><span class="num">{{ obra.valor_contrato|brl }}</span></li>
+      {% for a in aditivos %}<li><span><a href="{% url 'financeiro:aditivo_editar' a.pk %}">{{ a.descricao }}</a></span><span class="num">+ {{ a.valor|brl }}</span></li>{% endfor %}
+      <li><span class="mudo">Início</span><span>{{ obra.data_inicio|date:"d/m/Y"|default:"—" }}</span></li>
+      <li><span class="mudo">Término previsto</span><span>{{ obra.data_termino|date:"d/m/Y"|default:"—" }}</span></li>
+      <li><span class="mudo">Garantia</span><span>{{ obra.meses_garantia }} meses</span></li>
+      <li><span class="mudo">Imposto sobre NF</span><span>{{ obra.aliquota_imposto|floatformat:"-2" }}%</span></li>
+      <li><span class="mudo">Retenção padrão</span><span>{{ obra.retencao_padrao|floatformat:"-2" }}%</span></li>
+    </ul>
+    <p class="rotulo">Ao emitir uma NF de medição, o imposto entra sozinho em Lançamentos, na categoria Impostos.</p>
+  </div>
+</div>
+{% endblock %}

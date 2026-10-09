@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}{{ titulo_mes }}{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>{{ titulo_mes }}</h1><div class="sub">O mês da obra como na planilha: cada categoria, seus blocos e o total. Sem fórmula para quebrar.</div></div>
+  <div class="acoes">
+    <a class="botao icone" href="{% url 'financeiro:fechamento_mes' anterior.year anterior.month %}" title="Mês anterior">{% icone "voltar" %}</a>
+    <a class="botao" href="{% url 'financeiro:fechamento' %}">Este mês</a>
+    <a class="botao icone" href="{% url 'financeiro:fechamento_mes' seguinte.year seguinte.month %}" title="Próximo mês">{% icone "seta" %}</a>
+    <a class="botao" href="{% url 'financeiro:exportar' %}?mes={{ competencia|date:'Y-m' }}">{% icone "baixar" %}Excel</a>
+  </div>
+</div>
+
+<div class="grade g-4">
+  <div class="cartao"><div class="rotulo">Total do mês</div><div class="numero">{{ total|brl_curto }}</div><div class="contexto">{{ total|brl }}</div></div>
+  {% for b in blocos|slice:":3" %}
+  <div class="cartao"><div class="widget-cab">{% icone_categoria b.categoria.codigo %}<span class="rotulo">{{ b.categoria.nome }}</span></div>
+    <div class="numero medio">{{ b.total|brl_curto }}</div><div class="contexto">{{ b.grupos|length }} bloco{{ b.grupos|length|pluralize }}</div></div>
+  {% endfor %}
+</div>
+
+{% for b in blocos %}
+<div class="cartao mt">
+  <div class="cartao-cab">
+    <div style="display:flex;gap:10px;align-items:center">{% icone_categoria b.categoria.codigo %}<h2>{{ b.categoria.nome }}</h2></div>
+    <strong class="num" style="font-size:18px">{{ b.total|brl }}</strong>
+  </div>
+  <div class="tabela-caixa"><table>
+    <thead><tr><th>Data</th><th>Descrição</th><th>Para quem</th><th>Pagamento</th><th class="valor">Valor</th></tr></thead>
+    {% for g in b.grupos %}
+      <tbody>
+      <tr class="subtotal"><td colspan="4">{{ g.nome }}</td><td class="valor">{{ g.total|brl }}</td></tr>
+      {% for l in g.itens %}
+        <tr class="clicavel" data-href="{% url 'financeiro:lancamento' l.pk %}">
+          <td class="num">{{ l.data|date:"d/m" }}</td>
+          <td class="desc">{{ l.descricao|default:""|truncatechars:80 }}{% if l.diarias %}<small>{{ l.diarias|floatformat:"-1" }} diária{{ l.diarias|pluralize }} × {{ l.valor_diaria|brl }}{% if l.desconto %} − vales {{ l.desconto|brl }}{% endif %}</small>{% endif %}{% if l.quantidade %}<small>{{ l.quantidade|floatformat:"-2" }} {{ l.unidade }}</small>{% endif %}</td>
+          <td>{{ l.favorecido }}</td>
+          <td class="rotulo">{{ l.get_forma_pagamento_display }}{% if l.conta_bancaria %} · {{ l.conta_bancaria }}{% endif %}</td>
+          <td class="valor {% if l.valor < 0 %}positivo{% endif %}">{{ l.valor|brl }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    {% endfor %}
+  </table></div>
+</div>
+{% empty %}
+<div class="cartao mt"><div class="vazio">{% icone "calendario" %}Nada lançado em {{ titulo_mes|lower }}.<br><a href="{% url 'financeiro:lancamento_escolher' %}">Lançar agora</a></div></div>
+{% endfor %}
+{% endblock %}

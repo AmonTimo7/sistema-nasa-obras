@@ -1,0 +1,19 @@
+{% load fmt icones %}
+<div class="grade g-3">
+  <div class="cartao"><div class="rotulo">{{ titulo }} · quantidade</div><div class="numero">{{ c.quantidade|floatformat:"-2" }} {{ unidade }}</div><div class="contexto">{{ c.itens|length }} lançamento{{ c.itens|length|pluralize }}</div></div>
+  <div class="cartao"><div class="rotulo">Valor</div><div class="numero">{{ c.valor|brl_curto }}</div><div class="contexto">{{ c.valor|brl }}</div></div>
+  <div class="cartao"><div class="rotulo">Preço médio</div><div class="numero">{% if c.preco_medio %}{{ c.preco_medio|brl }}{% else %}—{% endif %}</div><div class="contexto">por {{ unidade }}{% if c.sem_quantidade %} · {{ c.sem_quantidade }} sem quantidade ficam de fora{% endif %}</div></div>
+</div>
+<div class="cartao mt">
+  <h2>{{ titulo }}</h2>
+  {% if c.itens %}
+  <div class="tabela-caixa"><table>
+    <thead><tr><th>Data</th><th>Fornecedor</th><th>Descrição</th><th class="valor">Qtd</th><th class="valor">R$/{{ unidade }}</th><th class="valor">Valor</th></tr></thead>
+    <tbody>{% for l in c.itens %}
+      <tr class="clicavel" data-href="{% url 'financeiro:lancamento' l.pk %}"><td class="num">{{ l.data|date:"d/m/y" }}</td><td>{{ l.fornecedor|default:"—" }}</td><td class="desc">{{ l.descricao|default:"—" }}</td>
+        <td class="valor">{% if l.quantidade %}{{ l.quantidade|floatformat:"-2" }}{% else %}<span class="pilula pilula-atencao"><i></i>sem</span>{% endif %}</td>
+        <td class="valor">{% if l.valor_unitario %}{{ l.valor_unitario|brl }}{% else %}—{% endif %}</td><td class="valor">{{ l.valor|brl }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="vazio">{% icone icone_nome %}Nada lançado. Lance com a quantidade ({{ unidade }}) para ter o preço médio.</div>{% endif %}
+</div>

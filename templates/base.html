@@ -1,0 +1,92 @@
+{% load static icones %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block titulo %}Início{% endblock %} · Nasa Obras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/sistema.css' %}?v={{ v }}">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230071e3'/%3E%3Cpath d='M7 22h18M9 22v-3a7 7 0 0 1 14 0v3M14 12V9.5h4V12' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/sistema.js' %}?v={{ v }}" defer></script>
+  {% block cabeca %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<div class="papel" aria-hidden="true"></div>
+{% if user.is_authenticated %}
+{% with url=request.resolver_match.url_name ns=request.resolver_match.namespace %}
+<div class="app">
+  <aside class="lateral">
+    <div class="semaforo" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="marca">
+      <span class="logo">{% icone "capacete" %}</span>
+      <div><b>Nasa Obras</b><small>Gestão de obras</small></div>
+    </div>
+    {% if obras and obras|length > 1 %}
+    <form class="seletor-obra" method="get" action="{{ request.path }}">
+      <select name="obra" onchange="this.form.submit()" aria-label="Obra em foco">
+        {% for o in obras %}<option value="{{ o.pk }}" {% if obra and o.pk == obra.pk %}selected{% endif %}>{{ o.nome }}</option>{% endfor %}
+      </select>
+    </form>
+    {% elif obra %}<div class="rotulo" style="padding:0 8px 6px">{{ obra.nome }}</div>{% endif %}
+
+    <nav class="menu" aria-label="Menu principal">
+      {% if ve_financeiro %}
+        <div class="secao">Obra</div>
+        <a href="{% url 'financeiro:painel' %}" class="{% if url == 'painel' %}ativo{% endif %}">{% icone "painel" %}Painel</a>
+        <a href="{% url 'financeiro:fechamento' %}" class="{% if url == 'fechamento' or url == 'fechamento_mes' %}ativo{% endif %}">{% icone "calendario" %}Mês a mês</a>
+      {% endif %}
+      {% if lanca %}
+        <a href="{% url 'financeiro:lancamentos' %}" class="{% if url == 'lancamentos' or url == 'lancamento' or url == 'lancamento_editar' or url == 'lancamento_novo' or url == 'lancamento_escolher' %}ativo{% endif %}">{% icone "lista" %}Lançamentos</a>
+      {% endif %}
+      {% if ve_financeiro %}
+        <a href="{% url 'financeiro:mao_de_obra' %}" class="{% if url == 'mao_de_obra' or url == 'prestador' %}ativo{% endif %}">{% icone "pessoas" %}Mão de obra</a>
+        <a href="{% url 'financeiro:empreitas' %}" class="{% if url == 'empreitas' or url == 'empreita' %}ativo{% endif %}">{% icone "regua" %}Empreitas</a>
+        <a href="{% url 'financeiro:contrato' %}" class="{% if url == 'contrato' %}ativo{% endif %}">{% icone "documento" %}Contrato e medições</a>
+        <a href="{% url 'financeiro:relatorios' %}" class="{% if url == 'relatorios' %}ativo{% endif %}">{% icone "grafico" %}Relatórios</a>
+        <a href="{% url 'financeiro:pendencias' %}" class="{% if url == 'pendencias' %}ativo{% endif %}">{% icone "alerta" %}Pendências</a>
+      {% endif %}
+      <a href="{% url 'financeiro:checklist' %}" class="{% if url == 'checklist' %}ativo{% endif %}">{% icone "checklist" %}Checklist e documentos</a>
+
+      {% if ve_financeiro %}
+        <div class="secao">Empresa</div>
+        <a href="{% url 'financeiro:visao_geral' %}" class="{% if url == 'visao_geral' %}ativo{% endif %}">{% icone "globo" %}Visão geral</a>
+        <a href="{% url 'financeiro:contas' %}" class="{% if url == 'contas' %}ativo{% endif %}">{% icone "cartao" %}Contas a pagar{% if n_vencidas %}<span class="contador alerta" title="vencidas">{{ n_vencidas }}</span>{% endif %}</a>
+        <a href="{% url 'financeiro:obras' %}" class="{% if url == 'obras' or url == 'obra_nova' or url == 'obra_editar' %}ativo{% endif %}">{% icone "obra" %}Obras</a>
+      {% endif %}
+
+      {% if ve_compras or ve_juridico %}<div class="secao">Cadastros</div>{% endif %}
+      {% if ve_compras %}
+        <a href="{% url 'compras:fornecedores' %}" class="{% if ns == 'compras' %}ativo{% endif %}">{% icone "caixa" %}Fornecedores</a>
+      {% endif %}
+      {% if ve_juridico %}
+        <a href="{% url 'juridico:prestadores' %}" class="{% if ns == 'juridico' %}ativo{% endif %}">{% icone "cracha" %}Prestadores</a>
+      {% endif %}
+      {% if ve_financeiro %}
+        <a href="{% url 'financeiro:responsaveis' %}" class="{% if url == 'responsaveis' %}ativo{% endif %}">{% icone "pessoa" %}Responsáveis</a>
+      {% endif %}
+    </nav>
+    <div class="rodape">
+      <span class="avatar">{{ user.first_name|default:user.username|first|upper }}</span>
+      <div>
+        <b>{{ user.get_full_name|default:user.username }}</b>
+        <a href="{% url 'trocar_senha' %}">Senha</a> ·
+        <form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}<button type="submit">Sair</button></form>
+      </div>
+    </div>
+  </aside>
+  <main class="conteudo" id="conteudo">
+    {% block conteudo %}{% endblock %}
+  </main>
+</div>
+{% endwith %}
+{% if messages %}<div class="mensagens" role="status">{% for m in messages %}<div class="mensagem {{ m.tags }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+{% else %}
+  {% block publico %}{% endblock %}
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

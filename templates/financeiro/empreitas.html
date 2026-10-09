@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Empreitas{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Empreitas</h1><div class="sub">Serviço contratado por preço: global, por m², por metro. Quanto foi medido, pago, retido e quanto falta.</div></div>
+  <a class="botao primario" href="{% url 'financeiro:empreita_nova' %}">{% icone "mais" %}Nova empreita</a>
+</div>
+{% if lista %}
+<div class="grade g-2">
+  {% for e in lista %}
+  <a class="cartao" href="{% url 'financeiro:empreita' e.pk %}">
+    <div class="widget-cab"><span class="widget-ic ic-roxo">{% icone "regua" %}</span><span class="rotulo">{{ e.contratado_por|default:"—" }}{% if e.encerrada %} · encerrada{% endif %}</span></div>
+    <h2 style="margin-top:10px">{{ e.descricao }}</h2>
+    <div class="pista mt">
+      <div class="pista-linha"><span>Executado</span><div class="trilho"><span style="width:{{ e.r.pct|largura }}%"></span></div><span class="valor">{{ e.r.pct|pct }}</span></div>
+    </div>
+    <ul class="lista-simples mt">
+      <li><span class="mudo">Contratado</span><span class="num">{{ e.r.contratado|brl }}</span></li>
+      <li><span class="mudo">Pago</span><span class="num">{{ e.r.pago|brl }}</span></li>
+      {% if e.r.retido %}<li><span class="mudo">Retido</span><span class="num">{{ e.r.retido|brl }}</span></li>{% endif %}
+      <li><span class="mudo">Saldo</span><strong class="num">{{ e.r.saldo|brl }}</strong></li>
+    </ul>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="cartao"><div class="vazio">{% icone "regua" %}Nenhuma empreita cadastrada.<br>Ex.: assentamento de intertravado por m², com 11% de retenção.</div></div>
+{% endif %}
+{% endblock %}

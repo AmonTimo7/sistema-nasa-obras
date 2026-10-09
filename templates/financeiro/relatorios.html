@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Relatórios{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Relatórios</h1><div class="sub">As visões da planilha, calculadas pelo sistema.</div></div>
+  <div class="segmentado">
+    <a class="{% if aba == 'geral' %}ativo{% endif %}" href="?aba=geral">Mês × categoria</a>
+    <a class="{% if aba == 'materiais' %}ativo{% endif %}" href="?aba=materiais">Materiais</a>
+    <a class="{% if aba == 'concreto' %}ativo{% endif %}" href="?aba=concreto">Concreto</a>
+    <a class="{% if aba == 'combustivel' %}ativo{% endif %}" href="?aba=combustivel">Combustível</a>
+  </div>
+</div>
+
+{% if aba == "geral" %}
+<div class="cartao">
+  <div class="cartao-cab"><h2>Visão geral da obra</h2><span class="rotulo">cada célula abre os lançamentos</span></div>
+  {% if geral.meses %}
+  <div class="tabela-caixa"><table class="matriz">
+    <thead><tr><th>Categoria</th>{% for m in geral.meses %}<th class="valor">{{ m|mes_curto }}</th>{% endfor %}<th class="valor">Total</th></tr></thead>
+    <tbody>{% for l in geral.linhas %}
+      <tr><td>{{ l.categoria.nome }}</td>
+        {% for v in l.valores %}<td class="valor {% if not v %}mudo{% endif %}">{% if v %}{{ v|brl_curto }}{% else %}—{% endif %}</td>{% endfor %}
+        <td class="valor"><strong><a href="{% url 'financeiro:lancamentos' %}?categoria={{ l.categoria.codigo }}">{{ l.total|brl }}</a></strong></td></tr>
+    {% endfor %}</tbody>
+    <tfoot><tr><td>Total</td>{% for t in geral.totais %}<td class="valor">{{ t|brl_curto }}</td>{% endfor %}<td class="valor">{{ geral.total|brl }}</td></tr></tfoot>
+  </table></div>
+  {% else %}<div class="vazio">{% icone "grafico" %}Sem lançamentos ainda.</div>{% endif %}
+</div>
+
+{% elif aba == "materiais" %}
+<div class="cartao">
+  <div class="cartao-cab"><h2>Compras por material</h2><span class="rotulo">Compra de materiais, por tipo e mês</span></div>
+  {% if materiais.linhas %}
+  <div class="tabela-caixa"><table class="matriz">
+    <thead><tr><th>Material</th>{% for m in materiais.meses %}<th class="valor">{{ m|mes_curto }}</th>{% endfor %}<th class="valor">Total</th></tr></thead>
+    <tbody>{% for l in materiais.linhas %}
+      <tr><td>{% if l.id %}<a href="{% url 'financeiro:lancamentos' %}?subcategoria={{ l.id }}">{{ l.nome }}</a>{% else %}{{ l.nome }}{% endif %}</td>
+        {% for v in l.valores %}<td class="valor {% if not v %}mudo{% endif %}">{% if v %}{{ v|brl_curto }}{% else %}—{% endif %}</td>{% endfor %}
+        <td class="valor"><strong>{{ l.total|brl }}</strong></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="vazio">{% icone "cubo" %}Nenhuma compra de material ainda.</div>{% endif %}
+</div>
+
+{% elif aba == "concreto" %}
+{% include "financeiro/_controle_quantidade.html" with c=concreto titulo="Controle de concreto" unidade="m³" icone_nome="cubo" %}
+
+{% else %}
+<div class="grade g-2">
+  <div>{% include "financeiro/_controle_quantidade.html" with c=diesel titulo="Diesel" unidade="L" icone_nome="combustivel" %}</div>
+  <div>{% include "financeiro/_controle_quantidade.html" with c=gasolina titulo="Gasolina" unidade="L" icone_nome="combustivel" %}</div>
+</div>
+{% endif %}
+{% endblock %}

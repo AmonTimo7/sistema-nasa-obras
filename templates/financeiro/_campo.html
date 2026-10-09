@@ -1,0 +1,15 @@
+{% with w=campo.field.widget.input_type %}
+<div class="{% if w == 'checkbox' %}check{% endif %} {% if campo.name in largos %}linha-inteira{% endif %}"
+     {% if campo.name == 'parcelas' or campo.name == 'primeiro_vencimento' %}data-a-prazo{% endif %}
+     {% if campo.name == 'diarias' or campo.name == 'valor_diaria' or campo.name == 'adicional' %}data-so-calculado{% endif %}>
+  {% if w == 'checkbox' %}
+    <label>{{ campo }} {{ campo.label }}</label>
+  {% else %}
+    <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="mudo">*</span>{% endif %}</label>
+    {% if w == 'file' and campo.value %}<span class="atual rotulo">Atual: {{ campo.value.name|cut:"lancamento/"|truncatechars:40 }}</span>{% endif %}
+    {% if w == 'file' %}<input type="file" name="{{ campo.html_name }}" id="{{ campo.id_for_label }}">{% else %}{{ campo }}{% endif %}
+  {% endif %}
+  {% if campo.help_text %}<div class="ajuda">{{ campo.help_text }}</div>{% endif %}
+  {% for e in campo.errors %}<div class="erro">{{ e }}</div>{% endfor %}
+</div>
+{% endwith %}

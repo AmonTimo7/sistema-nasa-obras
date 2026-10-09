@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Pendências{% endblock %}
+{% block conteudo %}
+<div class="topo"><div><h1>Pendências</h1>
+  <div class="sub">Pagamento sem comprovante, compra sem NF, serviço sem nota. Anexou, some daqui.</div></div></div>
+<div class="cartao">
+  {% if itens %}
+  <div class="tabela-caixa"><table>
+    <thead><tr><th>Data</th><th>Categoria</th><th>Para quem</th><th>Falta</th><th class="valor">Valor</th><th></th></tr></thead>
+    <tbody>{% for l, faltas in itens %}
+      <tr class="clicavel" data-href="{% url 'financeiro:lancamento_editar' l.pk %}">
+        <td class="num">{{ l.data|date:"d/m/y" }}</td>
+        <td>{{ l.categoria.nome }}</td>
+        <td>{{ l.favorecido }}</td>
+        <td>{% for f in faltas %}<span class="pilula pilula-atencao"><i></i>{{ f|capfirst }}</span> {% endfor %}</td>
+        <td class="valor">{{ l.valor|brl }}</td>
+        <td><a class="botao pequeno" href="{% url 'financeiro:lancamento_editar' l.pk %}">{% icone "clipe" %}Anexar</a></td>
+      </tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="vazio">{% icone "check" %}Tudo em ordem: todo lançamento tem comprovante e nota.</div>{% endif %}
+</div>
+{% endblock %}

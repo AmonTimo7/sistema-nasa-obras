@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load icones %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block conteudo %}
+<div class="topo"><div>
+  <a class="volta" href="{{ voltar }}">{% icone "voltar" %}Voltar</a>
+  <h1>{{ titulo }}</h1>
+  {% if subtitulo %}<div class="sub">{{ subtitulo }}</div>{% endif %}
+</div></div>
+<div class="cartao" style="max-width:860px">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "financeiro/_campos.html" %}
+    <div class="barra-salvar">
+      {% if excluir %}<button class="botao perigo" type="submit" form="form-excluir" style="margin-right:auto">{% icone "lixeira" %}Excluir</button>{% endif %}
+      <a class="botao" href="{{ voltar }}">Cancelar</a>
+      <button class="botao primario" type="submit">Salvar</button>
+    </div>
+  </form>
+  {% if excluir %}<form id="form-excluir" method="post" action="{{ excluir }}" onsubmit="return confirm('Excluir de vez?')">{% csrf_token %}</form>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}{% if l %}Editar lançamento{% else %}{{ categoria.nome }}{% endif %}{% endblock %}
+{% block conteudo %}
+<div class="topo"><div>
+  <a class="volta" href="{% if l %}{% url 'financeiro:lancamento' l.pk %}{% else %}{% url 'financeiro:lancamento_escolher' %}{% endif %}">{% icone "voltar" %}Voltar</a>
+  <div style="display:flex;gap:12px;align-items:center">{% icone_categoria categoria.codigo %}<h1>{% if l %}Editar · {% endif %}{{ categoria.nome }}</h1></div>
+  <div class="sub">{{ categoria.descricao }}</div>
+</div></div>
+
+<div class="cartao" style="max-width:920px">
+  <form method="post" enctype="multipart/form-data" data-calculo="{% if categoria.codigo == 1 %}mao{% else %}simples{% endif %}">
+    {% csrf_token %}
+    {% if avisos %}
+      <div class="faixa" style="border-left:3px solid var(--atencao)">
+        <span class="pilula pilula-atencao"><i></i>Confira</span>
+        <div><strong>Antes de salvar:</strong><ul>{% for a in avisos %}<li>{{ a }}</li>{% endfor %}</ul>
+          <span class="rotulo">Se estiver certo, clique em “Salvar mesmo assim”.</span></div>
+      </div>
+      <input type="hidden" name="confirmar" value="1">
+    {% endif %}
+    {% for e in form.non_field_errors %}<div class="faixa"><span class="pilula pilula-critico"><i></i>Não salvou</span><span>{{ e }}</span></div>{% endfor %}
+    {% if saldo_vales %}<div class="faixa"><span class="pilula pilula-azul"><i></i>Vales</span><span>Este prestador tem <strong>{{ saldo_vales|brl }}</strong> de vales em aberto. Desconte no campo “desconto de vales”.</span></div>{% endif %}
+
+    {% if especificos %}
+    <div class="form">
+      {% for campo in especificos %}{% include "financeiro/_campo.html" with largos="" %}{% endfor %}
+    </div>
+    <div class="secao-form"><h3>Pagamento</h3>
+    {% endif %}
+    <div class="form">
+      {% for campo in comuns %}{% include "financeiro/_campo.html" with largos="descricao observacao" %}{% endfor %}
+    </div>
+    {% if especificos %}</div>{% endif %}
+
+    <div class="barra-salvar">
+      <div class="total-calc"><small>{% if categoria.codigo == 1 %}Valor a pagar (prévia){% else %}Valor{% endif %}</small><span id="total-calculado">—</span></div>
+      {% if not l %}<button class="botao" type="submit" name="e_outro" value="1">Salvar e lançar outro</button>{% endif %}
+      <button class="botao primario" type="submit">{% if avisos %}Salvar mesmo assim{% else %}Salvar{% endif %}</button>
+    </div>
+  </form>
+</div>
+<datalist id="lista-fornecedores">{% for f in fornecedores %}<option value="{{ f.nome }}">{% endfor %}</datalist>
+{{ diarias|json_script:"diarias-prestadores" }}
+{% endblock %}

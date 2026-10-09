@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Contas a pagar{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Contas a pagar</h1><div class="sub">Boletos de compras a prazo, locações mensais e contas avulsas. Hoje é {{ hoje|date:"d/m/Y" }}.</div></div>
+  <div class="acoes">
+    <a class="botao" href="{% url 'financeiro:locacao_nova' %}">{% icone "chave" %}Locação mensal</a>
+    <a class="botao primario" href="{% url 'financeiro:conta_nova' %}">{% icone "mais" %}Conta avulsa</a>
+  </div>
+</div>
+<div class="grade g-3">
+  <a class="cartao" href="?ver=vencidas{% if todas %}&escopo=todas{% endif %}"><div class="widget-cab"><span class="widget-ic ic-vermelho">{% icone "alerta" %}</span><span class="rotulo">Vencidas</span></div>
+    <div class="numero {% if resumo.vencidas %}critico{% endif %}">{{ resumo.vencidas_valor|brl_curto }}</div><div class="contexto">{{ resumo.vencidas }} conta{{ resumo.vencidas|pluralize }}</div></a>
+  <a class="cartao" href="?ver=semana{% if todas %}&escopo=todas{% endif %}"><div class="widget-cab"><span class="widget-ic ic-laranja">{% icone "calendario" %}</span><span class="rotulo">Próximos 7 dias</span></div>
+    <div class="numero">{{ resumo.semana_valor|brl_curto }}</div><div class="contexto">{{ resumo.semana }} conta{{ resumo.semana|pluralize }}</div></a>
+  <a class="cartao" href="?ver=abertas{% if todas %}&escopo=todas{% endif %}"><div class="widget-cab"><span class="widget-ic ic-azul">{% icone "cartao" %}</span><span class="rotulo">Total em aberto</span></div>
+    <div class="numero">{{ resumo.aberto_valor|brl_curto }}</div><div class="contexto">{{ resumo.aberto }} conta{{ resumo.aberto|pluralize }}</div></a>
+</div>
+
+<div class="grade mt">
+<div class="cartao">
+  <div class="filtros" style="justify-content:space-between">
+    <div class="segmentado">
+      <a class="{% if ver == 'abertas' %}ativo{% endif %}" href="?ver=abertas{% if todas %}&escopo=todas{% endif %}">Em aberto</a>
+      <a class="{% if ver == 'vencidas' %}ativo{% endif %}" href="?ver=vencidas{% if todas %}&escopo=todas{% endif %}">Vencidas</a>
+      <a class="{% if ver == 'semana' %}ativo{% endif %}" href="?ver=semana{% if todas %}&escopo=todas{% endif %}">7 dias</a>
+      <a class="{% if ver == 'pagas' %}ativo{% endif %}" href="?ver=pagas{% if todas %}&escopo=todas{% endif %}">Pagas</a>
+    </div>
+    <div class="segmentado">
+      <a class="{% if not todas %}ativo{% endif %}" href="?ver={{ ver }}">Esta obra</a>
+      <a class="{% if todas %}ativo{% endif %}" href="?ver={{ ver }}&escopo=todas">Empresa toda</a>
+    </div>
+  </div>
+  {% if itens %}
+  <div class="tabela-caixa"><table>
+    <thead><tr><th>Vencimento</th><th>Fornecedor</th><th>O quê</th>{% if todas %}<th>Obra</th>{% endif %}<th class="valor">Valor</th><th>Situação</th><th></th></tr></thead>
+    <tbody>
+    {% for c in itens %}
+      <tr>
+        <td class="num">{{ c.vencimento|date:"d/m/Y" }}</td>
+        <td><a href="{% url 'compras:fornecedor' c.fornecedor.pk %}">{{ c.fornecedor }}</a></td>
+        <td class="desc">{{ c.descricao }}<small>{% if c.lancamento %}compra · parcela {{ c.parcela|default:"única" }}{% elif c.locacao %}locação mensal{% else %}avulsa{% endif %}</small></td>
+        {% if todas %}<td class="rotulo">{{ c.obra|default:"Empresa" }}</td>{% endif %}
+        <td class="valor"><strong>{{ c.valor|brl }}</strong></td>
+        <td>{% if c.sit == "paga" %}<span class="pilula pilula-ok"><i></i>Paga {{ c.pago_em|date:"d/m" }}</span>
+            {% elif c.sit == "vencida" %}<span class="pilula pilula-critico"><i></i>Vencida</span>
+            {% elif c.sit == "hoje" %}<span class="pilula pilula-atencao"><i></i>Vence hoje</span>
+            {% elif c.sit == "semana" %}<span class="pilula pilula-atencao"><i></i>Na semana</span>
+            {% else %}<span class="pilula"><i></i>Em aberto</span>{% endif %}</td>
+        <td style="white-space:nowrap;text-align:right">
+          {% if c.paga %}
+            <form method="post" action="{% url 'financeiro:conta_desfazer' c.pk %}" style="display:inline">{% csrf_token %}
+              <input type="hidden" name="voltar" value="{{ request.get_full_path }}"><button class="botao pequeno" type="submit">Desfazer</button></form>
+          {% else %}
+            <button class="botao pequeno primario" type="button" data-dialogo="pagar" data-acao="{% url 'financeiro:conta_pagar' c.pk %}"
+                    data-texto="Pagar {{ c.fornecedor }} — {{ c.valor|brl }}">Pagar</button>
+          {% endif %}
+          {% if c.boleto %}<a class="botao pequeno icone" href="{% url 'financeiro:arquivo' 'conta' c.pk 'boleto' %}" target="_blank" title="Boleto">{% icone "clipe" %}</a>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="{% if todas %}4{% else %}3{% endif %}">Total da lista</td><td class="valor">{{ total_lista|brl }}</td><td colspan="2"></td></tr></tfoot>
+  </table></div>
+  {% else %}<div class="vazio">{% icone "check" %}{% if ver == 'pagas' %}Nenhuma conta paga ainda.{% else %}Nenhuma conta aqui. Tudo em dia.{% endif %}</div>{% endif %}
+</div>
+
+<div class="cartao">
+  <div class="cartao-cab"><h2>Locações mensais</h2><a class="rotulo" href="{% url 'financeiro:locacao_nova' %}">+ nova</a></div>
+  {% if locacoes %}
+  <ul class="lista-simples">
+    {% for loc in locacoes %}
+    <li><span><a href="{% url 'financeiro:locacao_editar' loc.pk %}">{{ loc.descricao }}</a><br>
+        <span class="rotulo">{{ loc.fornecedor }} · todo dia {{ loc.dia_vencimento }}{% if not loc.ativa %} · encerrada{% endif %}</span></span>
+      <strong class="num">{{ loc.valor_mensal|brl }}</strong></li>
+    {% endfor %}
+  </ul>
+  <p class="rotulo" style="margin-bottom:0">A conta de cada mês aparece sozinha. Quando é paga, vira gasto da obra em Locações.</p>
+  {% else %}<div class="vazio">{% icone "chave" %}Contêiner, kit, gerador: cadastre e esqueça.</div>{% endif %}
+</div>
+</div>
+
+<dialog id="pagar">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="voltar" value="{{ request.get_full_path }}">
+    <h2 data-titulo style="margin-bottom:var(--e-4)">Pagar conta</h2>
+    <div class="form" style="grid-template-columns:1fr">
+      {% for campo in form_pagar %}{% include "financeiro/_campo.html" with largos="" %}{% endfor %}
+    </div>
+    <div class="acoes" style="justify-content:flex-end;margin-top:var(--e-5)">
+      <button class="botao" type="button" data-fechar>Cancelar</button>
+      <button class="botao primario" type="submit">Confirmar pagamento</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

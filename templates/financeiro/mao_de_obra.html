@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Mão de obra{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Mão de obra</h1><div class="sub">Quem trabalhou na obra, quanto recebeu e quanto ainda tem de vale para descontar.</div></div>
+  <div class="acoes">
+    <a class="botao" href="{% url 'juridico:prestador_novo' %}">{% icone "cracha" %}Novo prestador</a>
+    <a class="botao primario" href="{% url 'financeiro:lancamento_novo' 1 %}">{% icone "mais" %}Pagar diárias</a>
+  </div>
+</div>
+<div class="grade g-4">
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-azul">{% icone "pessoas" %}</span><span class="rotulo">Total pago na obra</span></div><div class="numero">{{ total|brl_curto }}</div><div class="contexto">{{ lista|length }} pessoa{{ lista|length|pluralize }}</div></div>
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-verde">{% icone "calendario" %}</span><span class="rotulo">Esta semana</span></div><div class="numero">{{ semana_total|brl_curto }}</div><div class="contexto">desde {{ inicio_semana|date:"d/m" }} · {{ semana_diarias|floatformat:"-1" }} diárias · {{ semana_pessoas }} pessoa{{ semana_pessoas|pluralize }}</div></div>
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-laranja">{% icone "relogio" %}</span><span class="rotulo">Vales em aberto</span></div><div class="numero">{{ vales_total|brl_curto }}</div><div class="contexto">a descontar nos próximos pagamentos</div></div>
+  <a class="cartao" href="{% url 'financeiro:empreitas' %}"><div class="widget-cab"><span class="widget-ic ic-roxo">{% icone "regua" %}</span><span class="rotulo">Empreitas</span></div><div class="numero medio">Por metragem</div><div class="contexto">contratos por m², metro ou global</div></a>
+</div>
+<div class="cartao mt">
+  {% if lista %}
+  <div class="tabela-caixa"><table>
+    <thead><tr><th>Nome</th><th>Função</th><th class="valor">Diárias</th><th class="valor">Pagamentos</th><th>Último</th><th class="valor">Vales em aberto</th><th class="valor">Total</th><th></th></tr></thead>
+    <tbody>
+    {% for p in lista %}
+      <tr class="clicavel" data-href="{% url 'financeiro:prestador' p.pk %}">
+        <td><strong>{{ p.nome }}</strong></td>
+        <td class="mudo">{{ p.funcao|default:"—" }}</td>
+        <td class="valor">{{ p.diarias|floatformat:"-1" }}</td>
+        <td class="valor">{{ p.qtd }}</td>
+        <td class="num">{{ p.ultimo|date:"d/m/y" }}</td>
+        <td class="valor">{% if p.vales %}<span class="pilula pilula-atencao"><i></i>{{ p.vales|brl }}</span>{% else %}<span class="mudo">—</span>{% endif %}</td>
+        <td class="valor"><strong>{{ p.total|brl }}</strong></td>
+        <td><a class="botao pequeno" href="{% url 'financeiro:lancamento_novo' 1 %}?prestador={{ p.pk }}">Pagar</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="vazio">{% icone "pessoas" %}Ninguém pago nesta obra ainda.</div>{% endif %}
+</div>
+{% if sem_pagamento %}
+<div class="cartao mt">
+  <h2>Cadastrados sem pagamento nesta obra</h2>
+  <ul class="lista-simples">{% for p in sem_pagamento %}
+    <li><span><a href="{% url 'financeiro:prestador' p.pk %}">{{ p.nome }}</a> <span class="rotulo">{{ p.funcao }}{% if p.valor_diaria %} · diária {{ p.valor_diaria|brl }}{% endif %}</span></span>
+      <a class="botao pequeno" href="{% url 'financeiro:lancamento_novo' 1 %}?prestador={{ p.pk }}">Pagar</a></li>
+  {% endfor %}</ul>
+</div>
+{% endif %}
+{% endblock %}

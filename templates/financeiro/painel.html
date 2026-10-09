@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static fmt icones %}
+{% block titulo %}Painel{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <h1>{{ obra.nome }}</h1>
+    <div class="sub">
+      {% if obra.cliente %}{{ obra.cliente }} · {% endif %}{% if obra.numero_contrato %}Contrato {{ obra.numero_contrato }} · {% endif %}
+      {% if r.dias_restantes is not None %}
+        {% if r.dias_restantes >= 0 %}faltam <strong>{{ r.dias_restantes }} dia{{ r.dias_restantes|pluralize }}</strong> para a entrega
+        {% else %}<strong class="negativo">prazo vencido há {{ r.dias_atraso }} dia{{ r.dias_atraso|pluralize }}</strong>{% endif %}
+      {% else %}<a href="{% url 'financeiro:obra_editar' obra.pk %}">informe o prazo da obra</a>{% endif %}
+    </div>
+  </div>
+  <div class="acoes">
+    <a class="botao" href="{% url 'financeiro:lancamento_novo' 1 %}">{% icone "pessoas" %}Diárias</a>
+    <a class="botao" href="{% url 'financeiro:lancamento_novo' 3 %}">{% icone "cubo" %}Compra</a>
+    <a class="botao primario" href="{% url 'financeiro:lancamento_escolher' %}">{% icone "mais" %}Lançamento</a>
+  </div>
+</div>
+
+{% if contas.vencidas or r.medicoes_atrasadas %}
+<div class="grade g-2" style="margin-bottom:var(--e-3)">
+  {% if contas.vencidas %}
+  <a class="faixa" href="{% url 'financeiro:contas' %}?ver=vencidas" style="margin:0">
+    <span class="pilula pilula-critico"><i></i>Vencidas</span>
+    <span><strong>{{ contas.vencidas }} conta{{ contas.vencidas|pluralize }}</strong> somando {{ contas.vencidas_valor|brl }}</span>
+  </a>
+  {% endif %}
+  {% if r.medicoes_atrasadas %}
+  <a class="faixa" href="{% url 'financeiro:contrato' %}" style="margin:0">
+    <span class="pilula pilula-atencao"><i></i>A receber</span>
+    <span><strong>{{ r.medicoes_atrasadas|length }} medição{{ r.medicoes_atrasadas|length|pluralize:"ões" }}</strong> com pagamento atrasado pelo cliente</span>
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="grade g-4">
+  <a class="cartao" href="{% url 'financeiro:contrato' %}">
+    <div class="widget-cab"><span class="widget-ic ic-azul">{% icone "documento" %}</span><span class="rotulo">Contrato</span></div>
+    <div class="numero">{{ r.contrato|brl_curto }}</div>
+    <div class="contexto">{% if r.aditivos %}inclui {{ r.aditivos|brl_curto }} de aditivos{% else %}sem aditivos{% endif %}</div>
+  </a>
+  <a class="cartao" href="{% url 'financeiro:lancamentos' %}">
+    <div class="widget-cab"><span class="widget-ic ic-laranja">{% icone "cartao" %}</span><span class="rotulo">Gasto até agora</span></div>
+    <div class="numero">{{ r.gasto|brl_curto }}</div>
+    <div class="contexto">{{ r.gasto_pct|pct }} do contrato · {{ r.gasto_mes|brl_curto }} em {{ mes_atual|lower }}</div>
+  </a>
+  <a class="cartao" href="{% url 'financeiro:contrato' %}">
+    <div class="widget-cab"><span class="widget-ic ic-verde">{% icone "porcentagem" %}</span><span class="rotulo">Faturado</span></div>
+    <div class="numero">{{ r.faturado|brl_curto }}</div>
+    <div class="contexto">{{ r.faturado_pct|pct }} do contrato · recebido {{ r.recebido|brl_curto }}</div>
+  </a>
+  <a class="cartao" href="{% url 'financeiro:relatorios' %}">
+    <div class="widget-cab"><span class="widget-ic ic-roxo">{% icone "grafico" %}</span><span class="rotulo">Caixa da obra</span></div>
+    <div class="numero {% if r.caixa < 0 %}critico{% endif %}">{{ r.caixa|brl_curto }}</div>
+    <div class="contexto">recebido − gasto · margem se nada mais fosse gasto: {{ r.margem_pct|pct }}</div>
+  </a>
+</div>
+
+<div class="grade g-21 mt">
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Ritmo da obra</h2><span class="rotulo">cada barra contra 100%</span></div>
+    <div class="pista">
+      <div class="pista-linha"><span>Prazo decorrido</span><div class="trilho neutro"><span style="width:{{ r.prazo_pct|largura }}%"></span></div><span class="valor">{{ r.prazo_pct|pct }}</span></div>
+      <div class="pista-linha"><span>Contrato gasto</span><div class="trilho"><span style="width:{{ r.gasto_pct|largura }}%"></span></div><span class="valor">{{ r.gasto_pct|pct }}</span></div>
+      <div class="pista-linha"><span>Contrato faturado</span><div class="trilho serie-2"><span style="width:{{ r.faturado_pct|largura }}%"></span></div><span class="valor">{{ r.faturado_pct|pct }}</span></div>
+    </div>
+    <p class="contexto" style="margin:var(--e-4) 0 0">
+      {% if r.prazo_pct is None %}Sem prazo cadastrado, o ritmo não tem contra o que comparar.
+      {% elif r.faturado_pct is None or r.faturado_pct < r.prazo_pct %}O faturamento está atrás do prazo: {{ r.prazo_pct|pct }} do tempo passou e {{ r.faturado_pct|default:0|pct }} do contrato foi faturado.
+      {% else %}O faturamento acompanha o prazo.{% endif %}
+      {% if r.gasto_pct and r.faturado_pct and r.gasto_pct > r.faturado_pct %} Gasta-se mais do que se fatura.{% endif %}
+    </p>
+  </div>
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Próximas contas</h2><a class="rotulo" href="{% url 'financeiro:contas' %}">ver todas</a></div>
+    {% if proximas %}
+    <ul class="lista-simples">
+      {% for c in proximas %}
+      <li><span>{{ c.fornecedor }}<br><span class="rotulo">{{ c.vencimento|date:"d/m" }}{% if c.parcela %} · {{ c.parcela }}{% endif %}</span></span>
+        <span><strong class="num">{{ c.valor|brl }}</strong><br>
+          {% if c.sit == "vencida" %}<span class="pilula pilula-critico"><i></i>Vencida</span>{% elif c.sit == "hoje" %}<span class="pilula pilula-atencao"><i></i>Hoje</span>{% elif c.sit == "semana" %}<span class="pilula pilula-atencao"><i></i>Na semana</span>{% else %}<span class="pilula"><i></i>Em aberto</span>{% endif %}
+        </span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="vazio">{% icone "check" %}Nenhuma conta em aberto nesta obra.</p>{% endif %}
+  </div>
+</div>
+
+<div class="grade g-2 mt">
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Gasto por mês</h2><span class="rotulo">clique numa barra para abrir o mês</span></div>
+    {% if r.lancamentos %}<div class="grafico"><canvas id="grafico-mes" role="img" aria-label="Gasto por mês"></canvas></div>
+    {% else %}<p class="vazio">{% icone "grafico" %}O gráfico aparece com o primeiro lançamento.</p>{% endif %}
+  </div>
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Gasto × faturado, acumulado</h2>
+      <div class="legenda"><span><i style="background:var(--serie-1)"></i>Gasto</span><span><i style="background:var(--serie-2)"></i>Faturado</span></div>
+    </div>
+    {% if r.lancamentos %}<div class="grafico"><canvas id="grafico-acumulado" role="img" aria-label="Gasto e faturado acumulados"></canvas></div>
+    {% else %}<p class="vazio">{% icone "grafico" %}Sem lançamentos ainda.</p>{% endif %}
+  </div>
+</div>
+
+<div class="grade g-2 mt">
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Para onde vai o dinheiro</h2><span class="rotulo">% do gasto da obra</span></div>
+    <div class="barras">
+      {% for c in categorias %}
+        <a class="barra-linha {% if not c.total %}vazia{% endif %}" href="{% url 'financeiro:lancamentos' %}?categoria={{ c.codigo }}">
+          <span class="nome">{{ c.nome }}</span>
+          <div class="trilho">{% if c.total > 0 %}<span style="width:{{ c.largura }}%"></span>{% endif %}</div>
+          <span class="valor {% if c.total < 0 %}positivo{% endif %}">{{ c.total|brl_curto }}<small>{% if c.pct %}{{ c.pct|pct }} · {% endif %}{{ c.qtd }} lanç.</small></span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Quem mais recebeu</h2></div>
+    {% if favorecidos %}
+    <ul class="lista-simples">
+      {% for f in favorecidos %}
+        <li>
+          <span>{% if f.tipo == 'prestador' %}<a href="{% url 'financeiro:prestador' f.id %}">{{ f.nome }}</a> <span class="rotulo">· mão de obra</span>
+                {% else %}<a href="{% url 'compras:fornecedor' f.id %}">{{ f.nome }}</a>{% endif %}
+            <br><span class="rotulo">{{ f.qtd }} pagamento{{ f.qtd|pluralize }}</span></span>
+          <strong class="num">{{ f.total|brl }}</strong>
+        </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="vazio">{% icone "pessoas" %}Ninguém recebeu ainda.</p>{% endif %}
+    {% if n_pendencias %}
+      <a class="faixa mt" href="{% url 'financeiro:pendencias' %}" style="margin-bottom:0"><span class="pilula pilula-atencao"><i></i>Pendências</span>
+        <span>{{ n_pendencias }} lançamento{{ n_pendencias|pluralize }} sem comprovante ou sem NF</span></a>
+    {% endif %}
+  </div>
+</div>
+{{ graficos|json_script:"dados-graficos" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/painel.js' %}?v={{ v }}"></script>
+{% endblock %}

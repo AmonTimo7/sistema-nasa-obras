@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load icones %}
+{% block titulo %}Novo lançamento{% endblock %}
+{% block conteudo %}
+<div class="topo"><div>
+  <a class="volta" href="{% url 'financeiro:lancamentos' %}">{% icone "voltar" %}Lançamentos</a>
+  <h1>O que você está lançando?</h1>
+  <div class="sub">Cada tipo abre o formulário com os campos certos. Obra: {{ obra.nome }}.</div>
+</div></div>
+<div class="categorias">
+  {% for c in categorias %}
+    <a class="categoria-tile" href="{% url 'financeiro:lancamento_novo' c.codigo %}">
+      {% icone_categoria c.codigo %}
+      <div><b>{{ c.nome }}</b><span>{{ c.descricao }}</span></div>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% load fmt icones %}
+<p class="rotulo" style="margin:0 0 var(--e-3)">
+  <strong class="num" style="font-size:20px;color:var(--tinta);font-family:var(--fonte-titulo)">{{ total|brl }}</strong>
+  &nbsp;em {{ quantidade }} lançamento{{ quantidade|pluralize }}
+  {% if filtro_nome %}· {{ filtro_nome }} <a href="{% url 'financeiro:lancamentos' %}">tirar filtro</a>{% endif %}
+</p>
+{% if pagina.object_list %}
+<div class="tabela-caixa">
+<table>
+  <thead><tr><th>Data</th><th>Categoria</th><th>Para quem</th><th>Descrição</th><th>Pagamento</th><th class="valor">Valor</th><th></th></tr></thead>
+  <tbody>
+  {% for l in pagina %}
+    <tr class="clicavel" data-href="{% url 'financeiro:lancamento' l.pk %}">
+      <td class="num">{{ l.data|date:"d/m/y" }}</td>
+      <td><div style="display:flex;gap:8px;align-items:center">{% icone_categoria l.categoria.codigo %}<span>{{ l.categoria.nome }}{% if l.subcategoria %}<br><span class="rotulo">{{ l.subcategoria.nome }}</span>{% elif l.tipo_mao_de_obra %}<br><span class="rotulo">{{ l.get_tipo_mao_de_obra_display }}{% if l.diarias %} · {{ l.diarias|floatformat:"-1" }} diária{{ l.diarias|pluralize }}{% endif %}</span>{% endif %}</span></div></td>
+      <td>{% if l.prestador %}{{ l.prestador.nome }}{% elif l.fornecedor %}{{ l.fornecedor.nome }}{% else %}<span class="mudo">—</span>{% endif %}</td>
+      <td class="desc">{{ l.descricao|default:""|truncatechars:70 }}{% if l.numero_nf %}<small>NF {{ l.numero_nf }}</small>{% endif %}</td>
+      <td class="rotulo">{{ l.get_forma_pagamento_display }}{% if l.parcelas > 1 %} {{ l.parcelas }}x{% endif %}</td>
+      <td class="valor {% if l.valor < 0 %}positivo{% endif %}">{{ l.valor|brl }}</td>
+      <td style="white-space:nowrap">
+        {% if l.status == "a pagar" %}<span class="pilula pilula-atencao"><i></i>A pagar</span>
+        {% elif l.status == "parcial" %}<span class="pilula pilula-azul"><i></i>Parcial</span>{% endif %}
+        {% if l.comprovante %}<span title="tem comprovante" class="mudo">{% icone "clipe" %}</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if pagina.has_other_pages %}
+<div class="paginacao">
+  {% if pagina.has_previous %}<a class="botao pequeno" href="?{{ filtros_qs }}&pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+  <span class="rotulo">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+  {% if pagina.has_next %}<a class="botao pequeno" href="?{{ filtros_qs }}&pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+  <div class="vazio">{% icone "lista" %}Nenhum lançamento{% if f %} com esses filtros{% endif %}.
+    <br><a href="{% url 'financeiro:lancamento_escolher' %}">Fazer o primeiro lançamento</a></div>
+{% endif %}

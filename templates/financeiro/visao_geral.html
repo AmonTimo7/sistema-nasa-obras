@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Visão geral{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Visão geral</h1><div class="sub">A empresa inteira: todas as obras, faturamento por nicho e contas. {{ mes_atual }}.</div></div>
+  <a class="botao primario" href="{% url 'financeiro:obra_nova' %}">{% icone "mais" %}Nova obra</a>
+</div>
+<div class="grade g-4">
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-verde">{% icone "porcentagem" %}</span><span class="rotulo">Faturado no mês</span></div><div class="numero">{{ v.faturado_mes|brl_curto }}</div><div class="contexto">NF emitidas em {{ mes_atual|lower }}</div></div>
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-laranja">{% icone "cartao" %}</span><span class="rotulo">Gasto no mês</span></div><div class="numero">{{ v.gasto_mes|brl_curto }}</div><div class="contexto">todas as obras</div></div>
+  <div class="cartao"><div class="widget-cab"><span class="widget-ic ic-cinza">{% icone "porcentagem" %}</span><span class="rotulo">Impostos do mês</span></div><div class="numero">{{ v.impostos_mes|brl_curto }}</div><div class="contexto">sobre as NF emitidas</div></div>
+  <a class="cartao" href="{% url 'financeiro:contas' %}?escopo=todas"><div class="widget-cab"><span class="widget-ic ic-vermelho">{% icone "alerta" %}</span><span class="rotulo">Contas vencidas</span></div><div class="numero {% if contas.vencidas %}critico{% endif %}">{{ contas.vencidas_valor|brl_curto }}</div><div class="contexto">{{ contas.vencidas }} vencida{{ contas.vencidas|pluralize }} · {{ contas.aberto_valor|brl_curto }} em aberto</div></a>
+</div>
+
+<div class="cartao mt">
+  <h2>Obras</h2>
+  {% if v.obras %}
+  <div class="tabela-caixa"><table>
+    <thead><tr><th>Obra</th><th>Situação</th><th class="valor">Contrato</th><th class="valor">Gasto</th><th class="valor">Faturado</th><th class="valor">Caixa</th><th>Prazo</th></tr></thead>
+    <tbody>{% for i in v.obras %}
+      <tr class="clicavel" data-href="{% url 'financeiro:painel' %}?obra={{ i.obra.pk }}">
+        <td><strong>{{ i.obra.nome }}</strong><br><span class="rotulo">{{ i.obra.get_nicho_display }}{% if i.obra.cliente %} · {{ i.obra.cliente }}{% endif %}</span></td>
+        <td><span class="pilula {% if i.obra.situacao == 'andamento' %}pilula-azul{% elif i.obra.situacao == 'concluida' %}pilula-ok{% endif %}"><i></i>{{ i.obra.get_situacao_display }}</span></td>
+        <td class="valor">{{ i.r.contrato|brl_curto }}</td>
+        <td class="valor">{{ i.r.gasto|brl_curto }}<br><span class="rotulo">{{ i.r.gasto_pct|pct }}</span></td>
+        <td class="valor">{{ i.r.faturado|brl_curto }}<br><span class="rotulo">{{ i.r.faturado_pct|pct }}</span></td>
+        <td class="valor {% if i.r.caixa < 0 %}negativo{% endif %}">{{ i.r.caixa|brl_curto }}</td>
+        <td style="min-width:140px"><div class="trilho neutro"><span style="width:{{ i.r.prazo_pct|largura }}%"></span></div><span class="rotulo">{% if i.r.dias_restantes is not None %}{% if i.r.dias_restantes >= 0 %}faltam {{ i.r.dias_restantes }} dias{% else %}atrasada {{ i.r.dias_atraso }} dias{% endif %}{% else %}sem prazo{% endif %}</span></td>
+      </tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="vazio">{% icone "obra" %}Nenhuma obra.</div>{% endif %}
+</div>
+
+<div class="grade g-21 mt">
+  <div class="cartao">
+    <h2>Por nicho</h2>
+    {% if v.nichos %}
+    <div class="tabela-caixa"><table>
+      <thead><tr><th>Nicho</th><th class="valor">Contratado</th><th class="valor">Faturado</th><th class="valor">Gasto</th><th class="valor">Faturado − gasto</th></tr></thead>
+      <tbody>{% for nome, n in v.nichos.items %}
+        <tr><td>{{ nome }}</td><td class="valor">{{ n.contrato|brl_curto }}</td><td class="valor">{{ n.faturado|brl_curto }}</td><td class="valor">{{ n.gasto|brl_curto }}</td>
+          <td class="valor {% if n.saldo < 0 %}negativo{% endif %}">{{ n.saldo|brl_curto }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% endif %}
+  </div>
+  <div class="cartao">
+    <div class="cartao-cab"><h2>Próximas contas</h2><a class="rotulo" href="{% url 'financeiro:contas' %}?escopo=todas">ver todas</a></div>
+    {% if proximas %}<ul class="lista-simples">{% for c in proximas %}
+      <li><span>{{ c.fornecedor }}<br><span class="rotulo">{{ c.vencimento|date:"d/m" }} · {{ c.obra|default:"Empresa" }}</span></span>
+        <span><strong class="num">{{ c.valor|brl }}</strong>{% if c.sit == "vencida" %}<br><span class="pilula pilula-critico"><i></i>Vencida</span>{% endif %}</span></li>
+    {% endfor %}</ul>{% else %}<div class="vazio">{% icone "check" %}Nada em aberto.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

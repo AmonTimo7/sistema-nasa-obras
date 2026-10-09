@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% load icones %}
+{% block titulo %}Início{% endblock %}
+{% block conteudo %}
+<div class="topo"><div><h1>Olá, {{ user.get_full_name|default:user.username }}</h1>
+  <div class="sub">Ainda não há obra cadastrada. Um sócio precisa cadastrar a primeira.</div></div></div>
+<div class="cartao"><p class="vazio">{% icone "obra" %}Assim que existir uma obra, o checklist dela aparece aqui.</p></div>
+{% endblock %}

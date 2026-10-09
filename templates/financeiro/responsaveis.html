@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Responsáveis{% endblock %}
+{% block conteudo %}
+<div class="topo"><div><h1>Responsáveis</h1><div class="sub">Quem compra e quem paga (a coluna “comprador” da planilha).</div></div></div>
+<div class="grade g-21">
+  <div class="cartao">
+    {% if lista %}
+    <div class="tabela-caixa"><table>
+      <thead><tr><th>Nome</th><th class="valor">Lançamentos</th><th class="valor">Total</th></tr></thead>
+      <tbody>{% for r in lista %}
+        <tr class="clicavel" data-href="{% url 'financeiro:lancamentos' %}?responsavel={{ r.pk }}"><td>{{ r.nome }}</td><td class="valor">{{ r.qtd }}</td><td class="valor">{{ r.total|brl }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="vazio">{% icone "pessoa" %}Ninguém cadastrado.</div>{% endif %}
+  </div>
+  <div class="cartao">
+    <h2>Novo responsável</h2>
+    <form method="post" class="form" style="grid-template-columns:1fr">{% csrf_token %}
+      <div><label for="nome">Nome</label><input type="text" id="nome" name="nome" required></div>
+      <div><button class="botao primario" type="submit">Cadastrar</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

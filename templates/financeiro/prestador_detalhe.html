@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}{{ p.nome }}{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <a class="volta" href="{% if ve_valores %}{% url 'financeiro:mao_de_obra' %}{% else %}{% url 'juridico:prestadores' %}{% endif %}">{% icone "voltar" %}Voltar</a>
+    <h1>{{ p.nome }}</h1>
+    <div class="sub">{{ p.funcao|default:"Função não informada" }}{% if not p.ativo %} · inativo{% endif %}</div>
+  </div>
+  <div class="acoes">
+    <a class="botao" href="{% url 'juridico:prestador_editar' p.pk %}">{% icone "lapis" %}Editar cadastro</a>
+    {% if ve_valores %}<a class="botao primario" href="{% url 'financeiro:lancamento_novo' 1 %}?prestador={{ p.pk }}">{% icone "mais" %}Pagar</a>{% endif %}
+  </div>
+</div>
+<div class="grade g-12">
+  <div class="cartao">
+    <h2>Cadastro</h2>
+    <ul class="lista-simples">
+      <li><span class="mudo">Diária</span><span class="num">{{ p.valor_diaria|brl }}</span></li>
+      <li><span class="mudo">Telefone</span><span>{{ p.telefone|default:"—" }}</span></li>
+      <li><span class="mudo">Documento</span><span>{{ p.documento|default:"—" }}</span></li>
+      <li><span class="mudo">Chave PIX</span><span>{{ p.chave_pix|default:"—" }}</span></li>
+      {% if p.titular_conta %}<li><span class="mudo">Titular da conta</span><span>{{ p.titular_conta }}</span></li>{% endif %}
+      <li><span class="mudo">Cidade</span><span>{{ p.cidade|default:"—" }}</span></li>
+      {% if p.endereco %}<li><span class="mudo">Endereço</span><span>{{ p.endereco }}</span></li>{% endif %}
+      {% if p.link_pasta %}<li><span class="mudo">Pasta</span><a href="{{ p.link_pasta }}" target="_blank" rel="noopener">abrir</a></li>{% endif %}
+    </ul>
+    {% if empreitas %}<h3 class="mt">Empreitas</h3><ul class="lista-simples">{% for e in empreitas %}<li><a href="{% url 'financeiro:empreita' e.pk %}">{{ e }}</a><span class="rotulo">{{ e.obra }}</span></li>{% endfor %}</ul>{% endif %}
+  </div>
+  <div>
+    {% if ve_valores %}
+    <div class="grade g-2">
+      <div class="cartao"><div class="rotulo">Recebeu nesta obra</div><div class="numero">{{ total|brl }}</div><div class="contexto">{{ obra.nome }}</div></div>
+      <div class="cartao"><div class="rotulo">Vales a descontar</div><div class="numero {% if vales > 0 %}critico{% endif %}">{{ vales|brl }}</div><div class="contexto">adiantado e ainda não descontado</div></div>
+    </div>
+    {% for m in meses %}
+    <div class="cartao mt">
+      <div class="cartao-cab"><h2>{{ m.mes }}</h2><span><span class="rotulo">{{ m.diarias|floatformat:"-1" }} diárias · </span><strong class="num">{{ m.total|brl }}</strong></span></div>
+      <div class="tabela-caixa"><table>
+        <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th class="valor">Valor</th><th></th></tr></thead>
+        <tbody>{% for l in m.itens %}
+          <tr class="clicavel" data-href="{% url 'financeiro:lancamento' l.pk %}">
+            <td class="num">{{ l.data|date:"d/m" }}</td>
+            <td>{{ l.get_tipo_mao_de_obra_display|default:l.categoria.nome }}{% if l.diarias %}<br><span class="rotulo">{{ l.diarias|floatformat:"-1" }} × {{ l.valor_diaria|brl }}{% if l.desconto %} − {{ l.desconto|brl }}{% endif %}</span>{% endif %}</td>
+            <td class="desc">{{ l.descricao|default:"—" }}</td>
+            <td class="valor">{{ l.valor|brl }}</td>
+            <td>{% if l.comprovante %}<span class="mudo">{% icone "clipe" %}</span>{% else %}<span class="pilula"><i></i>Sem comprov.</span>{% endif %}</td>
+          </tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    {% empty %}
+    <div class="cartao mt"><div class="vazio">{% icone "pessoa" %}Nenhum pagamento a {{ p.nome }} nesta obra.</div></div>
+    {% endfor %}
+    {% else %}
+    <div class="cartao"><p class="mudo">Valores pagos ficam no financeiro, visível só para os sócios.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

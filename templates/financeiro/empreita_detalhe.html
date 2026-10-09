@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}{{ e.descricao }}{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <a class="volta" href="{% url 'financeiro:empreitas' %}">{% icone "voltar" %}Empreitas</a>
+    <h1>{{ e.descricao }}</h1>
+    <div class="sub">{{ e.contratado_por }} · {{ e.get_unidade_display }}{% if e.preco_unitario %} a {{ e.preco_unitario|brl }}{% endif %}{% if e.retencao_pct %} · retenção {{ e.retencao_pct|floatformat:"-2" }}%{% endif %}</div>
+  </div>
+  <div class="acoes">
+    <a class="botao" href="{% url 'financeiro:empreita_editar' e.pk %}">{% icone "lapis" %}Editar</a>
+    {% if not e.encerrada %}<a class="botao primario" href="{% url 'financeiro:lancamento_novo' categoria_pagamento %}?empreita={{ e.pk }}">{% icone "mais" %}Lançar medição paga</a>{% endif %}
+  </div>
+</div>
+<div class="grade g-4">
+  <div class="cartao"><div class="rotulo">Contratado</div><div class="numero">{{ r.contratado|brl_curto }}</div><div class="contexto">{% if e.quantidade_prevista %}{{ e.quantidade_prevista|floatformat:"-2" }} {{ e.unidade }}{% else %}preço global{% endif %}</div></div>
+  <div class="cartao"><div class="rotulo">Medido</div><div class="numero">{% if e.quantidade_prevista %}{{ r.medido|floatformat:"-2" }} {{ e.unidade }}{% else %}{{ r.pct|pct }}{% endif %}</div><div class="contexto">{% if r.pct_medido %}{{ r.pct_medido|pct }} da quantidade contratada{% else %}do valor contratado{% endif %}</div></div>
+  <div class="cartao"><div class="rotulo">Pago</div><div class="numero">{{ r.pago|brl_curto }}</div><div class="contexto">{% if r.retido %}+ {{ r.retido|brl }} retidos{% else %}sem retenção{% endif %}</div></div>
+  <div class="cartao"><div class="rotulo">Saldo a pagar</div><div class="numero">{{ r.saldo|brl_curto }}</div><div class="contexto">{{ r.saldo|brl }}</div></div>
+</div>
+<div class="cartao mt">
+  <h2>Medições pagas</h2>
+  {% if pagamentos %}
+  <div class="tabela-caixa"><table>
+    <thead><tr><th>Data</th><th>Descrição</th><th class="valor">Medido</th><th class="valor">Retenção</th><th class="valor">Pago</th></tr></thead>
+    <tbody>{% for l in pagamentos %}
+      <tr class="clicavel" data-href="{% url 'financeiro:lancamento' l.pk %}"><td class="num">{{ l.data|date:"d/m/Y" }}</td><td class="desc">{{ l.descricao|default:"—" }}</td>
+        <td class="valor">{% if l.quantidade %}{{ l.quantidade|floatformat:"-2" }} {{ e.unidade }}{% else %}—{% endif %}</td><td class="valor">{{ l.retencao|brl }}</td><td class="valor">{{ l.valor|brl }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="vazio">{% icone "regua" %}Nenhuma medição paga ainda.</div>{% endif %}
+</div>
+{% endblock %}

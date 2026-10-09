@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Lançamento{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <a class="volta" href="{% url 'financeiro:lancamentos' %}">{% icone "voltar" %}Lançamentos</a>
+    <div style="display:flex;gap:12px;align-items:center">{% icone_categoria l.categoria.codigo %}
+      <h1 class="num {% if l.valor < 0 %}positivo{% endif %}">{{ l.valor|brl }}</h1></div>
+    <div class="sub">{{ l.categoria.nome }}{% if l.subcategoria %} · {{ l.subcategoria.nome }}{% endif %} · {{ l.data|date:"d/m/Y" }} · {{ l.favorecido }}</div>
+  </div>
+  <div class="acoes">
+    {% if l.categoria.codigo != 11 and ve_financeiro %}<a class="botao" href="{% url 'financeiro:lancamento_novo' 11 %}?estorno_de={{ l.pk }}">{% icone "estorno" %}Estornar</a>{% endif %}
+    <a class="botao" href="{% url 'financeiro:lancamento_editar' l.pk %}">{% icone "lapis" %}Editar</a>
+    <form method="post" action="{% url 'financeiro:lancamento_excluir' l.pk %}" onsubmit="return confirm('Excluir este lançamento?')">
+      {% csrf_token %}<button class="botao perigo icone" type="submit" title="Excluir">{% icone "lixeira" %}</button>
+    </form>
+  </div>
+</div>
+
+{% if parecidos %}
+<div class="faixa"><span class="pilula pilula-atencao"><i></i>Possível duplicidade</span>
+  <span>Há {{ parecidos|length }} pagamento{{ parecidos|length|pluralize }} igual{{ parecidos|length|pluralize:"is" }} perto desta data:
+  {% for p in parecidos %}<a href="{% url 'financeiro:lancamento' p.pk %}">{{ p.data|date:"d/m" }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</span></div>
+{% endif %}
+{% if l.pendencias %}<div class="faixa"><span class="pilula pilula-atencao"><i></i>Falta</span><span>{{ l.pendencias|join:", "|capfirst }}.</span></div>{% endif %}
+
+<div class="grade g-2">
+  <div class="cartao">
+    <h2>Detalhes</h2>
+    <ul class="lista-simples">
+      <li><span class="mudo">Data</span><span>{{ l.data|date:"d/m/Y" }} <span class="rotulo">(mês de {{ l.competencia|mes|lower }})</span></span></li>
+      {% if l.prestador %}<li><span class="mudo">Prestador</span><a href="{% url 'financeiro:prestador' l.prestador.pk %}">{{ l.prestador.nome }}</a></li>{% endif %}
+      {% if l.fornecedor %}<li><span class="mudo">Fornecedor</span><a href="{% url 'compras:fornecedor' l.fornecedor.pk %}">{{ l.fornecedor.nome }}</a></li>{% endif %}
+      {% if l.empreita %}<li><span class="mudo">Empreita</span><a href="{% url 'financeiro:empreita' l.empreita.pk %}">{{ l.empreita }}</a></li>{% endif %}
+      {% if l.descricao %}<li><span class="mudo">Descrição</span><span>{{ l.descricao }}</span></li>{% endif %}
+      {% if l.tipo_mao_de_obra %}
+        <li><span class="mudo">Tipo</span><span>{{ l.get_tipo_mao_de_obra_display }}</span></li>
+        {% if l.diarias %}<li><span class="mudo">Diárias</span><span class="num">{{ l.diarias|floatformat:"-1" }} × {{ l.valor_diaria|brl }}</span></li>{% endif %}
+        {% if l.adicional %}<li><span class="mudo">Empreita / tarefa</span><span class="num">+ {{ l.adicional|brl }}</span></li>{% endif %}
+        {% if l.desconto %}<li><span class="mudo">Vales descontados</span><span class="num negativo">− {{ l.desconto|brl }}</span></li>{% endif %}
+      {% endif %}
+      {% if l.quantidade %}<li><span class="mudo">Quantidade</span><span class="num">{{ l.quantidade|floatformat:"-2" }} {{ l.unidade }}{% if l.valor_unitario %} × {{ l.valor_unitario|brl }}{% endif %}</span></li>{% endif %}
+      {% if l.retencao %}<li><span class="mudo">Retenção</span><span class="num">{{ l.retencao|brl }}</span></li>{% endif %}
+      {% if l.periodo_inicio %}<li><span class="mudo">Período</span><span>{{ l.periodo_inicio|date:"d/m/Y" }}{% if l.periodo_fim %} a {{ l.periodo_fim|date:"d/m/Y" }}{% endif %}</span></li>{% endif %}
+      {% if l.numero_nf %}<li><span class="mudo">Nº NF</span><span>{{ l.numero_nf }}</span></li>{% endif %}
+      {% if l.estorno_de %}<li><span class="mudo">Estorno de</span><a href="{% url 'financeiro:lancamento' l.estorno_de.pk %}">{{ l.estorno_de }}</a></li>{% endif %}
+      {% for e in estornos %}<li><span class="mudo">Estornado por</span><a href="{% url 'financeiro:lancamento' e.pk %}">{{ e }}</a></li>{% endfor %}
+      {% if l.observacao %}<li><span class="mudo">Observação</span><span>{{ l.observacao }}</span></li>{% endif %}
+    </ul>
+  </div>
+  <div>
+    <div class="cartao">
+      <div class="cartao-cab"><h2>Pagamento</h2>
+        {% if status == "pago" %}<span class="pilula pilula-ok"><i></i>Pago</span>{% elif status == "parcial" %}<span class="pilula pilula-azul"><i></i>Parcial</span>{% else %}<span class="pilula pilula-atencao"><i></i>A pagar</span>{% endif %}
+      </div>
+      <ul class="lista-simples">
+        <li><span class="mudo">Forma</span><span>{{ l.get_forma_pagamento_display }}{% if l.parcelas > 1 %} em {{ l.parcelas }}x{% endif %}</span></li>
+        {% if l.conta_bancaria %}<li><span class="mudo">Conta</span><span>{{ l.conta_bancaria }}</span></li>{% endif %}
+        {% if l.responsavel %}<li><span class="mudo">Comprador / responsável</span><span>{{ l.responsavel }}</span></li>{% endif %}
+        {% if l.prestador and l.categoria.codigo == 1 %}<li><span class="mudo">PIX do prestador</span><span>{{ l.prestador.chave_pix|default:"não cadastrado" }}</span></li>{% endif %}
+        {% if l.nf_emitida %}<li><span class="mudo">NF do prestador</span><span>emitida</span></li>{% endif %}
+      </ul>
+      {% if contas %}
+        <h3 class="mt" style="margin-bottom:6px">Parcelas</h3>
+        <ul class="lista-simples">{% for c in contas %}
+          <li><span>{{ c.parcela|default:"Única" }} · vence {{ c.vencimento|date:"d/m/Y" }}</span>
+            <span><strong class="num">{{ c.valor|brl }}</strong> {% if c.paga %}<span class="pilula pilula-ok"><i></i>Paga {{ c.pago_em|date:"d/m" }}</span>{% else %}<span class="pilula"><i></i>Em aberto</span>{% endif %}</span></li>
+        {% endfor %}</ul>
+      {% endif %}
+    </div>
+    <div class="cartao mt">
+      <h2>Arquivos</h2>
+      <ul class="lista-simples">
+        <li><span class="mudo">Comprovante</span>{% if l.comprovante %}<a href="{% url 'financeiro:arquivo' 'lancamento' l.pk 'comprovante' %}" target="_blank">{% icone "clipe" %} abrir</a>{% else %}<span class="negativo">não anexado</span>{% endif %}</li>
+        <li><span class="mudo">Nota fiscal</span>{% if l.arquivo_nf %}<a href="{% url 'financeiro:arquivo' 'lancamento' l.pk 'arquivo_nf' %}" target="_blank">{% icone "clipe" %} abrir</a>{% else %}<span class="mudo">não anexada</span>{% endif %}</li>
+      </ul>
+      <p class="rotulo" style="margin:var(--e-3) 0 0">Lançado {% if l.criado_por %}por {{ l.criado_por.get_full_name|default:l.criado_por.username }} {% endif %}em {{ l.criado_em|date:"d/m/Y H:i" }}.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

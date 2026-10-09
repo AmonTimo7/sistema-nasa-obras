@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Obras{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Obras</h1><div class="sub">Cada obra tem o seu financeiro, contrato, checklist e documentos.</div></div>
+  <a class="botao primario" href="{% url 'financeiro:obra_nova' %}">{% icone "mais" %}Nova obra</a>
+</div>
+{% if v.obras %}
+<div class="grade g-2">
+  {% for i in v.obras %}
+  <div class="cartao">
+    <div class="cartao-cab">
+      <div class="widget-cab"><span class="widget-ic ic-azul">{% icone "obra" %}</span><div><h2>{{ i.obra.nome }}</h2><span class="rotulo">{{ i.obra.get_nicho_display }}{% if i.obra.cidade %} · {{ i.obra.cidade }}{% endif %}</span></div></div>
+      <span class="pilula {% if i.obra.situacao == 'andamento' %}pilula-azul{% elif i.obra.situacao == 'concluida' %}pilula-ok{% endif %}"><i></i>{{ i.obra.get_situacao_display }}</span>
+    </div>
+    <div class="pista">
+      <div class="pista-linha"><span>Prazo</span><div class="trilho neutro"><span style="width:{{ i.r.prazo_pct|largura }}%"></span></div><span class="valor">{{ i.r.prazo_pct|pct }}</span></div>
+      <div class="pista-linha"><span>Gasto</span><div class="trilho"><span style="width:{{ i.r.gasto_pct|largura }}%"></span></div><span class="valor">{{ i.r.gasto_pct|pct }}</span></div>
+      <div class="pista-linha"><span>Faturado</span><div class="trilho serie-2"><span style="width:{{ i.r.faturado_pct|largura }}%"></span></div><span class="valor">{{ i.r.faturado_pct|pct }}</span></div>
+    </div>
+    <div class="acoes mt">
+      <a class="botao primario" href="{% url 'financeiro:painel' %}?obra={{ i.obra.pk }}">Abrir painel</a>
+      <a class="botao" href="{% url 'financeiro:obra_editar' i.obra.pk %}">{% icone "lapis" %}Editar</a>
+      <span class="rotulo" style="margin-left:auto">contrato {{ i.r.contrato|brl_curto }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="cartao"><div class="vazio">{% icone "obra" %}Nenhuma obra ainda.<br><a href="{% url 'financeiro:obra_nova' %}">Cadastrar a primeira</a></div></div>
+{% endif %}
+{% endblock %}

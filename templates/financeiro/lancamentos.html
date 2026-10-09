@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load icones %}
+{% block titulo %}Lançamentos{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Lançamentos</h1><div class="sub">Cada saída de dinheiro de {{ obra.nome }}. Clique numa linha para ver tudo.</div></div>
+  <div class="acoes">
+    {% if ve_financeiro %}<a class="botao" href="{% url 'financeiro:exportar' %}?{{ filtros_qs }}">{% icone "baixar" %}Excel</a>{% endif %}
+    <a class="botao primario" href="{% url 'financeiro:lancamento_escolher' %}">{% icone "mais" %}Novo</a>
+  </div>
+</div>
+<div class="cartao">
+  <form class="filtros" hx-get="{% url 'financeiro:lancamentos' %}" hx-target="#tabela" hx-push-url="true"
+        hx-trigger="change, keyup changed delay:350ms from:input[type=search]">
+    <input type="search" name="q" value="{{ f.q }}" placeholder="Buscar descrição, pessoa, fornecedor, NF" aria-label="Buscar">
+    <select name="mes" aria-label="Mês">
+      <option value="">Todos os meses</option>
+      {% for chave, nome in meses %}<option value="{{ chave }}" {% if f.mes == chave %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+    </select>
+    <select name="categoria" aria-label="Categoria">
+      <option value="">Todas as categorias</option>
+      {% for c in categorias %}<option value="{{ c.codigo }}" {% if f.categoria == c.codigo|stringformat:"d" %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+    </select>
+    <select name="forma" aria-label="Forma de pagamento">
+      <option value="">Qualquer pagamento</option>
+      {% for v, n in formas %}<option value="{{ v }}" {% if f.forma == v %}selected{% endif %}>{{ n }}</option>{% endfor %}
+    </select>
+    <label class="marcar"><input type="checkbox" name="sem_comprovante" value="1" {% if f.sem_comprovante %}checked{% endif %}> Sem comprovante</label>
+    {% if f.prestador %}<input type="hidden" name="prestador" value="{{ f.prestador }}">{% endif %}
+    {% if f.fornecedor %}<input type="hidden" name="fornecedor" value="{{ f.fornecedor }}">{% endif %}
+    {% if f.empreita %}<input type="hidden" name="empreita" value="{{ f.empreita }}">{% endif %}
+    {% if f.subcategoria %}<input type="hidden" name="subcategoria" value="{{ f.subcategoria }}">{% endif %}
+  </form>
+  <div id="tabela">{% include "financeiro/_tabela_lancamentos.html" %}</div>
+</div>
+{% endblock %}

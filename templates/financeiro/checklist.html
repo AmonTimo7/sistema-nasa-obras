@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Checklist da obra{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Checklist e documentos</h1><div class="sub">O setlist de início da obra e a documentação. {{ feitos }} de {{ total }} resolvidos.</div></div>
+</div>
+<div class="cartao compacto" style="margin-bottom:var(--e-4)">
+  <div class="pista-linha" style="grid-template-columns:120px minmax(0,1fr) 60px"><span>Andamento</span><div class="trilho ok"><span style="width:{{ pct|largura }}%"></span></div><span class="valor">{{ pct|pct }}</span></div>
+</div>
+{% for grupo, itens in grupos.items %}
+<div class="cartao {% if not forloop.first %}mt{% endif %}">
+  <h2>{{ grupo }}</h2>
+  {% for item in itens %}{% include "financeiro/_checklist_item.html" %}{% endfor %}
+</div>
+{% empty %}
+<div class="cartao"><div class="vazio">{% icone "checklist" %}Sem itens. O checklist padrão é editável no admin.</div></div>
+{% endfor %}
+{% endblock %}

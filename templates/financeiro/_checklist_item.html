@@ -1,0 +1,19 @@
+{% load icones %}
+<div class="checklist-item {{ item.situacao }}" id="item-{{ item.pk }}">
+  <span class="marcador">{% if item.situacao == 'feito' %}{% icone "check" %}{% endif %}</span>
+  <div>
+    <div class="nome">{{ item.nome }}</div>
+    <div class="rotulo">
+      {% if item.prazo and item.situacao != 'feito' and item.situacao != 'nao_aplica' %}{% if item.prazo < hoje %}<span class="negativo">prazo vencido {{ item.prazo|date:"d/m" }}</span>{% else %}prazo {{ item.prazo|date:"d/m" }}{% endif %} · {% endif %}
+      {% if item.link %}<a href="{{ item.link }}" target="_blank" rel="noopener">abrir link</a> · {% endif %}
+      {% if item.arquivo %}<a href="{% url 'financeiro:arquivo' 'checklist' item.pk 'arquivo' %}" target="_blank">arquivo</a> · {% endif %}
+      {% if item.atualizado_por %}{{ item.atualizado_por.get_full_name|default:item.atualizado_por.username }}, {{ item.atualizado_em|date:"d/m/Y" }}{% endif %}
+    </div>
+  </div>
+  <input type="date" name="prazo" value="{{ item.prazo|date:'Y-m-d' }}" aria-label="Prazo de {{ item.nome }}"
+         hx-post="{% url 'financeiro:checklist_item' item.pk %}" hx-target="#item-{{ item.pk }}" hx-swap="outerHTML" hx-trigger="change">
+  <select name="situacao" aria-label="Situação de {{ item.nome }}"
+          hx-post="{% url 'financeiro:checklist_item' item.pk %}" hx-target="#item-{{ item.pk }}" hx-swap="outerHTML">
+    {% for v, rot in situacoes %}<option value="{{ v }}" {% if item.situacao == v %}selected{% endif %}>{{ rot }}</option>{% endfor %}
+  </select>
+</div>

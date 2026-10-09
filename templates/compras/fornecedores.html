@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load fmt icones %}
+{% block titulo %}Fornecedores{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div><h1>Fornecedores</h1><div class="sub">Recorrente: compra direta com preço combinado. Cotação: pede orçamento antes.</div></div>
+  <a class="botao primario" href="{% url 'compras:fornecedor_novo' %}">{% icone "mais" %}Novo fornecedor</a>
+</div>
+<div class="cartao">
+  <form class="filtros" method="get">
+    <input type="search" name="q" value="{{ q }}" placeholder="Buscar nome, ramo ou cidade" aria-label="Buscar">
+    <div class="segmentado">
+      <a class="{% if not tipo %}ativo{% endif %}" href="?q={{ q }}">Todos</a>
+      <a class="{% if tipo == 'recorrente' %}ativo{% endif %}" href="?tipo=recorrente&q={{ q }}">Recorrentes</a>
+      <a class="{% if tipo == 'cotacao' %}ativo{% endif %}" href="?tipo=cotacao&q={{ q }}">Cotação</a>
+    </div>
+  </form>
+  {% if lista %}
+  <div class="tabela-caixa"><table>
+    <thead><tr><th>Fornecedor</th><th>Ramo</th><th>Tipo</th><th>Contato</th><th class="valor">Compras</th><th>Última</th><th class="valor">Total</th></tr></thead>
+    <tbody>{% for f in lista %}
+      <tr class="clicavel" data-href="{% url 'compras:fornecedor' f.pk %}">
+        <td><strong>{{ f.nome }}</strong>{% if not f.ativo %} <span class="rotulo">inativo</span>{% endif %}</td>
+        <td class="mudo">{{ f.ramo|default:"—" }}</td>
+        <td>{% if f.tipo == 'recorrente' %}<span class="pilula pilula-ok"><i></i>Recorrente</span>{% else %}<span class="pilula"><i></i>Cotação</span>{% endif %}</td>
+        <td class="rotulo">{{ f.telefone|default:"—" }}</td>
+        <td class="valor">{{ f.qtd }}</td>
+        <td class="num">{{ f.ultima|date:"d/m/y"|default:"—" }}</td>
+        <td class="valor">{{ f.total|brl }}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="vazio">{% icone "caixa" %}Nenhum fornecedor{% if q %} para “{{ q }}”{% endif %}. Eles também nascem sozinhos ao lançar uma compra.</div>{% endif %}
+</div>
+{% endblock %}

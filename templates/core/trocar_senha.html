@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Trocar senha{% endblock %}
+{% block conteudo %}
+<div class="topo"><div><h1>Trocar senha</h1>
+  {% if obrigatoria %}<div class="sub">Sua senha é provisória. Escolha a sua para liberar o sistema.</div>{% endif %}
+</div></div>
+<div class="cartao" style="max-width:460px">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form" style="grid-template-columns:1fr">
+      {% for campo in form %}
+        <div>
+          <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+          <input type="password" name="{{ campo.html_name }}" id="{{ campo.id_for_label }}" required>
+          {% for e in campo.errors %}<div class="erro">{{ e }}</div>{% endfor %}
+        </div>
+      {% endfor %}
+      <p class="ajuda">Mínimo de 8 caracteres, sem ser só número nem parecida com o usuário.</p>
+    </div>
+    <div class="barra-salvar"><button class="botao primario" type="submit">Salvar senha</button></div>
+  </form>
+</div>
+{% endblock %}
