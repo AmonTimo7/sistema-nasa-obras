@@ -9,7 +9,14 @@
     caixa.appendChild(m);
     setTimeout(function () { m.remove(); }, 6000);
   }
-  document.addEventListener("submit", function (e) { e.preventDefault(); aviso(); var d = e.target.closest("dialog"); if (d) d.close(); }, true);
+  document.addEventListener("submit", function (e) {
+    if (e.target.closest(".rodape")) {  // botão Sair
+      e.preventDefault();
+      try { localStorage.removeItem("nasa-demo"); } catch (x) {}
+      window.location = window.DEMO_BASE || "./";
+      return;
+    }
+    e.preventDefault(); aviso(); var d = e.target.closest("dialog"); if (d) d.close(); }, true);
   document.addEventListener("click", function (e) {
     var a = e.target.closest('a[href="#demo"]');
     if (a) { e.preventDefault(); aviso(); }
